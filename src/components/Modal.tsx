@@ -125,7 +125,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab 
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white mb-2">Nombre</label>
+                  <label className="block text-white mb-2">Nombre del Proyecto</label>
                   <input type="text" className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" />
                 </div>
                 <div>
