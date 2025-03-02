@@ -13,7 +13,7 @@ function App() {
 
   return (
     <>
-      <div className="flex h-screen bg-[#111]">
+      <div className="flex min-h-screen bg-[#111]">
         <Sidebar 
           onNewClick={() => setIsModalOpen(true)} 
           onDatabaseClick={() => setCurrentView('database')}

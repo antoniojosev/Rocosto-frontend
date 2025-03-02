@@ -99,7 +99,7 @@ const CopyItemModal: React.FC<CopyItemModalProps> = ({ isOpen, onClose, onSelect
                   <div className="text-white">{item.descripcion}</div>
                   <div className="text-white">{item.unidad}</div>
                   <div className="flex items-center justify-between">
-                    <span className="text-white">{item.costo.toFixed(2)}</span>
+                    <span className="text-white">{item.costo?.toFixed(2)}</span>
                     <button
                       onClick={() => onSelect(item)}
                       className="px-4 py-1 bg-white text-black rounded-md hover:bg-gray-200 transition-colors text-sm"

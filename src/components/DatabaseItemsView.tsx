@@ -133,7 +133,7 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
                 <div className="text-white">{item.code}</div>
                 <div className="text-white">{item.description}</div>
                 <div className="text-white">{item.unit}</div>
-                <div className="text-white">{item.cost.toFixed(2)} US$</div>
+                <div className="text-white">{item.cost?.toFixed(2)} US$</div>
               </div>
             ))}
         </div>
