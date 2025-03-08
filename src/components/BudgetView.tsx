@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Plus, Copy, ArrowLeft, X, Trash, Edit2, Save, ChevronRight } from 'lucide-react';
 import BudgetItemModal from './BudgetItemModal';
 import CopyItemModal from './CopyItemModal';
+import { Equipment, IBudget, Labor, Material, WorkItem } from '../api/endpoints/budgets';
 
 interface BudgetViewProps {
   onBack: () => void;
+  budget: IBudget
 }
 
 const mockItems = [
@@ -309,17 +311,16 @@ const mockItems = [
 ];
 
 
-const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
+const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [items, setItems] = useState<any[]>(mockItems);
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [copyModalType, setCopyModalType] = useState<'material' | 'equipo' | 'mano-de-obra' | null>(null);
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'materiales' | 'equipos' | 'mano-de-obra'>('materiales');
-  
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: WorkItem) => {
     if (selectedItem?.id === item.id) {
       // If clicking the same item, toggle details visibility
       setDetailsVisible(!detailsVisible);
@@ -446,6 +447,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
 
   return (
     <div className="p-6 relative">
+      
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-gray-400 hover:text-white mb-6"
@@ -456,7 +458,8 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
 
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Proyecto Example new-budget-id</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">Proyecto Example</h1>
+          
           <p className="text-gray-400">Constructora XYZ</p>
         </div>
         <button
@@ -491,13 +494,13 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
               <div>Mano de Obra</div>
             </div>
 
-            {items.length === 0 ? (
+            {(!budget || budget.work_item.length === 0) ? (
               <div className="p-8 text-center">
                 <p className="text-gray-400">No hay partidas creadas. Haga clic en "Nueva Partida" para comenzar.</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-800">
-                {items.slice(0,10).map((item) => (
+                {budget.work_item.map((item) => (
                   <div
                     key={item.id}
                     className={`grid grid-cols-7 gap-4 p-4 text-sm cursor-pointer transition-colors ${
@@ -505,13 +508,13 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                     }`}
                     onClick={() => handleItemClick(item)}
                   >
-                    <div className="text-white">{item.codigo}</div>
+                    <div className="text-white">{item.code}</div>
                     <div className="col-span-2 text-white">{item.description}</div>
-                    <div className="text-white">{item.unit}</div>
-                    <div className="text-white">{item.materialesTotal?.toFixed(2)}</div>
-                    <div className="text-white">{item.equiposTotal?.toFixed(2)}</div>
+                    <div className="text-white">{item.code}</div>
+                    <div className="text-white">{item.code}</div>
+                    <div className="text-white">{item.code}</div>
                     <div className="flex items-center justify-between">
-                      <span className="text-white">{item.manoDeObraTotal?.toFixed(2)}</span>
+                      <span className="text-white">{item.code}</span>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -544,7 +547,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="text-white text-lg font-semibold">{selectedItem.codigo}</h3>
+                  <h3 className="text-white text-lg font-semibold">{selectedItem.code}</h3>
                   <p className="text-gray-400 text-sm mt-1">{selectedItem.description}</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -573,7 +576,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                       : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
                   }`}
                 >
-                  Materiales ({selectedItem.materiales.length})
+                  Materiales ({selectedItem.materials.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('equipos')}
@@ -583,7 +586,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                       : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
                   }`}
                 >
-                  Equipos ({selectedItem.equipos.length})
+                  Equipos ({selectedItem.equipment.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('mano-de-obra')}
@@ -593,7 +596,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                       : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
                   }`}
                 >
-                  Mano de Obra ({selectedItem.manoDeObra.length})
+                  Mano de Obra ({selectedItem.labor.length})
                 </button>
               </div>
 
@@ -627,21 +630,21 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.materiales.map((material: any) => (
-                      <div key={material.codigo} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
-                        <div className="text-white">{material.codigo}</div>
-                        <div className="text-white">{material.descripcion}</div>
+                    {selectedItem.materials.map((material: Material) => (
+                      <div key={material.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
+                        <div className="text-white">{material.code}</div>
+                        <div className="text-white">{material.description}</div>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={material.cantidad}
+                            value={material.cost}
                             onChange={(e) => handleUpdateQuantity(e, 'material', material)}
                             className="bg-[#1a1a1a] text-white text-sm rounded px-2 py-1 w-20 border border-gray-700"
                           />
                         </div>
-                        <div className="text-white">{material.costo?.toFixed(2)}</div>
+                        <div className="text-white">{material.cost}</div>
                         <div className="flex items-center justify-between">
-                          <span className="text-white">{material.total?.toFixed(2)}</span>
+                          <span className="text-white">{material.cost}</span>
                           <div className="flex gap-2">
                             
                             <button
@@ -658,7 +661,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
 
                   <div className="mt-4 pt-4 border-t border-gray-700 text-right">
                     <span className="text-gray-400 text-sm">Total Materiales: </span>
-                    <span className="text-white font-semibold">{selectedItem.materialesTotal?.toFixed(2)}</span>
+                    <span className="text-white font-semibold">{selectedItem.unit}</span>
                   </div>
                 </div>
               )}
@@ -693,21 +696,21 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.equipos.map((equipo: any) => (
-                      <div key={equipo.codigo} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
-                        <div className="text-white">{equipo.codigo}</div>
-                        <div className="text-white">{equipo.descripcion}</div>
+                    {selectedItem.equipment.map((equipo: Equipment) => (
+                      <div key={equipo.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
+                        <div className="text-white">{equipo.code}</div>
+                        <div className="text-white">{equipo.description}</div>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={equipo.cantidad}
+                            value={equipo.depreciation}
                             onChange={(e) => handleUpdateQuantity(e, 'equipo', equipo)}
                             className="bg-[#1a1a1a] text-white text-sm rounded px-2 py-1 w-20 border border-gray-700"
                           />
                         </div>
-                        <div className="text-white">{equipo.costo?.toFixed(2)}</div>
+                        <div className="text-white">{equipo.cost}</div>
                         <div className="flex items-center justify-between">
-                          <span className="text-white">{equipo.total?.toFixed(2)}</span>
+                          <span className="text-white">{equipo.cost}</span>
                           <div className="flex gap-2">
                             <button className="text-gray-400 hover:text-white">
                               <Edit2 size={16} />
@@ -726,7 +729,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
 
                   <div className="mt-4 pt-4 border-t border-gray-700 text-right">
                     <span className="text-gray-400 text-sm">Total Equipos: </span>
-                    <span className="text-white font-semibold">{selectedItem.equiposTotal?.toFixed(2)}</span>
+                    <span className="text-white font-semibold">{selectedItem.yield_rate}</span>
                   </div>
                 </div>
               )}
@@ -761,21 +764,21 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.manoDeObra.map((mano: any) => (
-                      <div key={mano.codigo} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
-                        <div className="text-white">{mano.codigo}</div>
-                        <div className="text-white">{mano.descripcion}</div>
+                    {selectedItem.labor.map((mano: Labor) => (
+                      <div key={mano.code} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
+                        <div className="text-white">{mano.code}</div>
+                        <div className="text-white">{mano.description}</div>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={mano.cantidad}
+                            value={mano.hourly_cost}
                             onChange={(e) => handleUpdateQuantity(e, 'mano-de-obra', mano)}
                             className="bg-[#1a1a1a] text-white text-sm rounded px-2 py-1 w-20 border border-gray-700"
                           />
                         </div>
-                        <div className="text-white">{mano.costo?.toFixed(2)}</div>
+                        <div className="text-white">{mano.hourly_cost}</div>
                         <div className="flex items-center justify-between">
-                          <span className="text-white">{mano.total?.toFixed(2)}</span>
+                          <span className="text-white">{mano.hourly_cost}</span>
                           <div className="flex gap-2">
                             <button className="text-gray-400 hover:text-white">
                               <Edit2 size={16} />
@@ -794,7 +797,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack }) => {
 
                   <div className="mt-4 pt-4 border-t border-gray-700 text-right">
                     <span className="text-gray-400 text-sm">Total Mano de Obra: </span>
-                    <span className="text-white font-semibold">{selectedItem.manoDeObraTotal?.toFixed(2)}</span>
+                    <span className="text-white font-semibold">{selectedItem.yield_rate}</span>
                   </div>
                 </div>
               )}

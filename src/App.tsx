@@ -5,11 +5,18 @@ import Modal from './components/Modal';
 import BudgetListView from './components/BudgetListView';
 import BudgetView from './components/BudgetView';
 import DatabaseView from './components/DatabaseView';
+import { IBudget } from './api/endpoints/budgets';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [currentView, setCurrentView] = useState<'budget-list' | 'budget-detail' | 'database'>('budget-list');
+  const [selectedBudget, setSelectedBudget] = useState<IBudget | null>(null);
+
+  const handleBudgetClick = (budget : IBudget): void => {
+    setSelectedBudget(budget);
+    setCurrentView('budget-detail');
+  };
 
   return (
     <>
@@ -25,11 +32,16 @@ function App() {
         </div>
       ) : currentView === 'budget-detail' ? (
         <div className="flex-1">
-          <BudgetView onBack={() => setCurrentView('budget-list')} />
+          {selectedBudget && (
+            <BudgetView 
+              onBack={() => setCurrentView('budget-list')}
+              budget={selectedBudget} 
+            />
+          )}
         </div>
       ) : (
         <div className="flex-1">
-          <BudgetListView onBudgetClick={() => setCurrentView('budget-detail')} />
+          <BudgetListView onBudgetClick={handleBudgetClick} />
         </div>
       )}
 

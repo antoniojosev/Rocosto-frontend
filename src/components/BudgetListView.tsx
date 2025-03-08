@@ -1,36 +1,23 @@
 import React, { useState } from 'react';
 import { Plus, Search, ArrowUpDown } from 'lucide-react';
 import Modal from './Modal';
+import useBudget from '../hooks/useBudget';
+import { IBudget } from '../api/endpoints/budgets';
 
 interface BudgetListViewProps {
-  onBudgetClick: () => void;
+  onBudgetClick: (budget: IBudget) => void;
 }
-
-const mockBudgets = [
-  {
-    id: 1,
-    name: 'Proyecto Residencial Torres del Valle',
-    company: 'Constructora XYZ',
-    createdAt: '2024-03-15',
-    status: 'En Proceso',
-    progress: 45,
-    total: 250000.00
-  },
-  {
-    id: 2,
-    name: 'Centro Comercial Plaza Central',
-    company: 'Constructora ABC',
-    createdAt: '2024-03-10',
-    status: 'Pendiente',
-    progress: 0,
-    total: 1500000.00
-  }
-];
 
 const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
+  const { data, isLoading, error } = useBudget();
+
+  const handleBudgetClick = (budget: IBudget): void => {
+    console.log(budget.work_item.length);
+    onBudgetClick(budget);
+  };
 
   return (
     <div className="p-6">
@@ -79,35 +66,36 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
         </div>
 
         <div className="divide-y divide-gray-800">
-          {mockBudgets
+          {(data ?? [])
             .filter(budget => 
               budget.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              budget.company.toLowerCase().includes(searchTerm.toLowerCase())
+              budget.code.toLowerCase().includes(searchTerm.toLowerCase())
             )
             .map(budget => (
               <div
                 key={budget.id}
-                onClick={onBudgetClick}
+                onClick={() => handleBudgetClick(budget)}
                 className="grid grid-cols-6 gap-4 p-4 text-sm hover:bg-[#2a2a2a] cursor-pointer transition-colors"
               >
                 <div className="col-span-2">
                   <div className="text-white font-medium">{budget.name}</div>
                   <div className="text-gray-400 text-xs mt-1">
-                    Progreso: {budget.progress}%
+                    Progreso: {budget.code}%
                   </div>
                 </div>
-                <div className="text-white">{budget.company}</div>
-                <div className="text-white">{budget.createdAt}</div>
+                <div className="text-white">{budget.contract}</div>
+                <div className="text-white">{budget.code}</div>
                 <div>
                   <span className={`px-2 py-1 rounded-full text-xs ${
-                    budget.status === 'En Proceso' 
+                    budget.code === 'En Proceso' 
                       ? 'bg-blue-500/20 text-blue-400'
                       : 'bg-yellow-500/20 text-yellow-400'
                   }`}>
-                    {budget.status}
+                    {budget.id}
                   </span>
                 </div>
-                <div className="text-white">{budget.total.toLocaleString('es-VE', { style: 'currency', currency: 'USD' })}</div>
+                {/* <div className="text-white">{budget.code}</div> */}
+                {/* <div className="text-white">{budget.code.toLocaleString('es-VE', { style: 'currency', currency: 'USD' })}</div> */}
               </div>
             ))}
         </div>
