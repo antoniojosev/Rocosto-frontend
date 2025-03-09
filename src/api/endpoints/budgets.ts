@@ -1,5 +1,18 @@
 import client from '../client';
 
+export type StateChoices = 'IN_PROGRESS' | 'PENDING' | 'FINISHED';
+
+export interface StateInfo {
+  text: string;
+  style: string;
+}
+
+export interface Company {
+  id: string
+  name: string
+}
+
+
 export interface IBudget {
     id: string
     code: string
@@ -22,6 +35,9 @@ export interface IBudget {
     bonds: Bond[]
     retentions: Retention[]
     work_item: WorkItem[]
+    created_at: string
+    state: StateChoices
+    company: Company
   }
   
   export interface Bond {
@@ -48,6 +64,10 @@ export interface IBudget {
     labor: Labor[]
     yield_rate: string
     database: Database4
+    total_labor_cost: string
+    total_equipment_cost: string
+    total_material_cost: string
+    total_cost: string
   }
   
   export interface Material {

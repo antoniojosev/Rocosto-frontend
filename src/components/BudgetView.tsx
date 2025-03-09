@@ -485,13 +485,14 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
+            <div className="grid grid-cols-8 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
               <div>Código</div>
               <div className="col-span-2">Descripción</div>
               <div>Unidad</div>
               <div>Materiales</div>
               <div>Equipos</div>
               <div>Mano de Obra</div>
+              <div>Total</div>
             </div>
 
             {(!budget || budget.work_item.length === 0) ? (
@@ -503,18 +504,20 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                 {budget.work_item.map((item) => (
                   <div
                     key={item.id}
-                    className={`grid grid-cols-7 gap-4 p-4 text-sm cursor-pointer transition-colors ${
+                    className={`grid grid-cols-8 gap-4 p-4 text-sm cursor-pointer transition-colors ${
                       selectedItem?.id === item.id ? 'bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'
                     }`}
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="text-white">{item.code}</div>
                     <div className="col-span-2 text-white">{item.description}</div>
-                    <div className="text-white">{item.code}</div>
-                    <div className="text-white">{item.code}</div>
-                    <div className="text-white">{item.code}</div>
+                    <div className="text-white">{item.unit}</div>
+                    <div className="text-white">{item.materials.length}</div>
+                    <div className="text-white">{item.equipment.length}</div>
+                    <div className="text-white">{item.labor.length}</div>
+                    {/* <div className="text-white">{item.labor.length}</div> */}
                     <div className="flex items-center justify-between">
-                      <span className="text-white">{item.code}</span>
+                      <span className="text-white">{item.total_cost}$</span>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();

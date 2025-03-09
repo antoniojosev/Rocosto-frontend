@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, ArrowUpDown } from 'lucide-react';
 import Modal from './Modal';
 import useBudget from '../hooks/useBudget';
-import { IBudget } from '../api/endpoints/budgets';
+import { IBudget, StateChoices, StateInfo} from '../api/endpoints/budgets';
 
 interface BudgetListViewProps {
   onBudgetClick: (budget: IBudget) => void;
@@ -13,6 +13,21 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const { data, isLoading, error } = useBudget();
+
+  const stateMapping: Record<StateChoices, StateInfo> = {
+    IN_PROGRESS: {
+      text: 'In Progress',
+      style: 'bg-blue-500/20 text-blue-400',
+    },
+    PENDING: {
+      text: 'Pending',
+      style: 'bg-yellow-500/20 text-yellow-400',
+    },
+    FINISHED: {
+      text: 'Finished',
+      style: 'bg-green-500/20 text-green-400',
+    },
+  };
 
   const handleBudgetClick = (budget: IBudget): void => {
     console.log(budget.work_item.length);
@@ -83,18 +98,14 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
                     Progreso: {budget.code}%
                   </div>
                 </div>
-                <div className="text-white">{budget.contract}</div>
-                <div className="text-white">{budget.code}</div>
+                <div className="text-white">{budget.company.name}</div>
+                <div className="text-white">{new Date(budget.created_at).toLocaleDateString('es-ES')}</div>
                 <div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    budget.code === 'En Proceso' 
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {budget.id}
+                  <span className={`px-2 py-1 rounded-full text-xs ${stateMapping[budget.state].style}`}>
+                    {stateMapping[budget.state].text}
                   </span>
                 </div>
-                {/* <div className="text-white">{budget.code}</div> */}
+                <div className="text-white">{budget.code}</div>
                 {/* <div className="text-white">{budget.code.toLocaleString('es-VE', { style: 'currency', currency: 'USD' })}</div> */}
               </div>
             ))}

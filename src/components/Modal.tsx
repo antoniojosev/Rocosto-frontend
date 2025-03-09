@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, Check, User, Info } from 'lucide-react';
+import { X, Check, Info, Search } from 'lucide-react';
+import useCompany from '../hooks/useCompany';
+import { IOwner } from '../api/endpoints/companies';
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,7 +11,7 @@ interface ModalProps {
   onCreateBudget: () => void;
 }
 
-// Simulated users data with extended information
+
 const systemUsers = [
   { 
     id: 1, 
@@ -41,12 +43,56 @@ const systemUsers = [
     phone: '+1 234 567 892',
     experience: '10 años'
   },
+  { 
+    id: 4, 
+    name: 'Ana Martínez', 
+    role: 'Propietaria', 
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&q=80',
+    department: 'Dirección',
+    email: 'ana.martinez@empresa.com',
+    phone: '+1 234 567 893',
+    experience: '12 años'
+  },
+  { 
+    id: 5, 
+    name: 'Roberto Sánchez', 
+    role: 'Propietario', 
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&q=80',
+    department: 'Dirección',
+    email: 'roberto.sanchez@empresa.com',
+    phone: '+1 234 567 894',
+    experience: '15 años'
+  }
 ];
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab, onCreateBudget }) => {
-  const [hoveredUser, setHoveredUser] = useState<number | null>(null);
+  const [hoveredUser, setHoveredUser] = useState<IOwner | null>(null);
+  const { data } = useCompany();
+  const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false);
+  const [selectedOwner, setSelectedOwner] = useState<IOwner| null>(null);
+  const [ownerSearchTerm, setOwnerSearchTerm] = useState('');
+  const [searchFocusCalculatedBy, setSearchFocusCalculatedBy] = useState(false);
+  const [searchFocusReviewedBy, setSearchFocusReviewedBy] = useState(false);
+
+
+  const [calculatedBySearchTerm, setCalculatedBySearchTerm] = useState('');
+  const [reviewedBySearchTerm, setReviewedBySearchTerm] = useState('');
+  const [selectedCalculatedBy, setSelectedCalculatedBy] = useState<IOwner | null>(null);
+  const [selectedReviewedBy, setSelectedReviewedBy] = useState<IOwner | null>(null);
+
+  const handleCalculatedBySelect = (user: IOwner) => {
+    setSelectedCalculatedBy(user);
+    setSearchFocusCalculatedBy(false);
+  };
+  
+  const handleReviewedBySelect = (user: IOwner) => {
+    setSelectedReviewedBy(user);
+    setSearchFocusReviewedBy(false);
+  };
+  
 
   if (!isOpen) return null;
+
 
   const tabs = [
     { id: 'general', label: 'General', completed: true },
@@ -55,20 +101,20 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
     { id: 'otros', label: 'Otros', completed: activeTab === 'otros' }
   ];
 
-  const UserTooltip = ({ user }: { user: typeof systemUsers[0] }) => (
+  const UserTooltip = ({ user }: { user: IOwner }) => (
     <div className="absolute z-50 bg-[#2a2a2a] text-white rounded-lg shadow-lg p-4 w-64 -translate-x-full left-0 mt-2">
       <div className="flex items-start gap-4 mb-3">
-        <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover" />
+        <img src={systemUsers[0].avatar} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
         <div>
-          <h4 className="font-semibold">{user.name}</h4>
-          <p className="text-sm text-gray-400">{user.role}</p>
+          <h4 className="font-semibold">{user.username}</h4>
+          <p className="text-sm text-gray-400">{systemUsers[0].role}</p>
         </div>
       </div>
       <div className="space-y-2 text-sm">
-        <p><span className="text-gray-400">Departamento:</span> {user.department}</p>
+        <p><span className="text-gray-400">Departamento:</span> {systemUsers[0].department}</p>
         <p><span className="text-gray-400">Email:</span> {user.email}</p>
-        <p><span className="text-gray-400">Teléfono:</span> {user.phone}</p>
-        <p><span className="text-gray-400">Experiencia:</span> {user.experience}</p>
+        <p><span className="text-gray-400">Teléfono:</span> {systemUsers[0].phone}</p>
+        <p><span className="text-gray-400">Experiencia:</span> {systemUsers[0].experience}</p>
       </div>
     </div>
   );
@@ -118,6 +164,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                     <label className="block text-white mb-2">Empresa</label>
                     <select className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700">
                       <option>Seleccionar empresa</option>
+                      {data?.map(company => (
+                        <option key={company.id} value={company.id}>{company.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -129,67 +178,226 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                   <label className="block text-white mb-2">Nombre</label>
                   <input type="text" className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" />
                 </div>
-                <div>
+                <div className="relative">
                   <label className="block text-white mb-2">Propietario</label>
-                  <input type="text" className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" />
+                  <div className="relative">
+                    <div 
+                      className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 cursor-pointer flex items-center"
+                      onClick={() => setIsOwnerDropdownOpen(!isOwnerDropdownOpen)}
+                    >
+                      {selectedOwner ? (
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={systemUsers[0].avatar}
+                            alt={selectedOwner.username}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          <div>
+                            <div className="text-white text-sm">{selectedOwner.username}</div>
+                            <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Seleccionar propietario</span>
+                      )}
+                    </div>
+                    {isOwnerDropdownOpen && (
+                      <div className="absolute z-50 w-full mt-2 bg-[#2a2a2a] rounded-md border border-gray-700 shadow-lg">
+                        <div className="p-2">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                            <input
+                              type="text"
+                              placeholder="Buscar propietario..."
+                              value={ownerSearchTerm}
+                              onChange={(e) => setOwnerSearchTerm(e.target.value)}
+                              className="w-full bg-[#1a1a1a] text-white rounded-md pl-8 pr-4 py-2 text-sm border border-gray-700"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {data?.flatMap(company => 
+                              company.owners.map(owner => (
+                                <div
+                                  key={owner.id}
+                                  className="flex items-center gap-3 p-2 hover:bg-[#3a3a3a] cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setSelectedOwner(owner);
+                                    setIsOwnerDropdownOpen(false);
+                                  }}
+                                >
+                                <img
+                                  src={systemUsers[0].avatar}
+                                  alt={owner.username}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                                <div>
+                                  <div className="text-white text-sm">{owner.username}</div>
+                                  <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
+                                </div>
+                                </div>
+                              ))
+                            )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-white mb-2">Calculado por</label>
                     <div className="space-y-2">
-                      {systemUsers.map(user => (
-                        <div
-                          key={user.id}
-                          className="relative flex items-center gap-3 p-2 rounded-md bg-[#2a2a2a] border border-gray-700 cursor-pointer hover:bg-[#3a3a3a] transition-colors group"
-                        >
+                      {selectedCalculatedBy ? (
+                        <div className="relative flex items-center gap-3 p-2 rounded-md bg-[#2a2a2a] border border-gray-700">
                           <img
-                            src={user.avatar}
-                            alt={user.name}
+                            src={systemUsers[0].avatar}
+                            alt={selectedCalculatedBy.username}
                             className="w-8 h-8 rounded-full object-cover"
                           />
                           <div className="flex-1">
-                            <div className="text-white text-sm">{user.name}</div>
-                            <div className="text-gray-400 text-xs">{user.role}</div>
+                            <div className="text-white text-sm">{selectedCalculatedBy.username}</div>
+                            <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
                           </div>
                           <button
                             className="text-gray-400 hover:text-white transition-colors relative"
-                            onMouseEnter={() => setHoveredUser(user.id)}
+                            onMouseEnter={() => setHoveredUser(selectedCalculatedBy)}
                             onMouseLeave={() => setHoveredUser(null)}
                           >
                             <Info size={16} />
-                            {hoveredUser === user.id && <UserTooltip user={user} />}
+                            {hoveredUser === selectedCalculatedBy && <UserTooltip user={selectedCalculatedBy} />}
+                          </button>
+                          <button
+                            onClick={() => setSelectedCalculatedBy(null)}
+                            className="text-gray-400 hover:text-white ml-2"
+                          >
+                            <X size={16} />
                           </button>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="relative mb-2">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                          <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={calculatedBySearchTerm}
+                            onChange={(e) => setCalculatedBySearchTerm(e.target.value)}
+                            onFocus={() => setSearchFocusCalculatedBy(true)}
+                            className="w-full bg-[#2a2a2a] text-white rounded-md pl-8 pr-4 py-2 text-sm border border-gray-700"
+                          />
+                        </div>    
+                      )}
+                      {searchFocusCalculatedBy && (
+                          <div className="relative z-50 w-full mt-2 bg-[#2a2a2a] rounded-md border border-gray-700 shadow-lg">
+                            {data?.flatMap(company => 
+                              company.owners.map(owner => (
+                              <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                <div
+                                  key={owner.id}
+                                  className="relative flex items-center gap-3 p-2 hover:bg-[#3a3a3a] cursor-pointer transition-color"
+                                  onClick={() => handleCalculatedBySelect(owner)}
+                                >
+                                  <img
+                                    src={systemUsers[0].avatar}
+                                    alt={owner.username}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="text-white text-sm">{owner.username}</div>
+                                    <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
+                                  </div>
+                                  <button
+                                    className="text-gray-400 hover:text-white transition-colors relative"
+                                    onMouseEnter={() => setHoveredUser(owner)}
+                                    onMouseLeave={() => setHoveredUser(null)}
+                                  >
+                                    <Info size={16} />
+                                    {hoveredUser === owner && <UserTooltip user={owner} />}
+                                  </button>
+                                </div>
+                              </div>
+                              ))
+                            )}
+                          </div>
+                      )}
                     </div>
                   </div>
                   <div>
                     <label className="block text-white mb-2">Revisado por</label>
                     <div className="space-y-2">
-                      {systemUsers.map(user => (
-                        <div
-                          key={user.id}
-                          className="relative flex items-center gap-3 p-2 rounded-md bg-[#2a2a2a] border border-gray-700 cursor-pointer hover:bg-[#3a3a3a] transition-colors group"
-                        >
+                      
+                      {selectedReviewedBy ? (
+                        <div className="relative flex items-center gap-3 p-2 rounded-md bg-[#2a2a2a] border border-gray-700">
                           <img
-                            src={user.avatar}
-                            alt={user.name}
+                            src={systemUsers[0].avatar}
+                            alt={selectedReviewedBy.username}
                             className="w-8 h-8 rounded-full object-cover"
                           />
                           <div className="flex-1">
-                            <div className="text-white text-sm">{user.name}</div>
-                            <div className="text-gray-400 text-xs">{user.role}</div>
+                            <div className="text-white text-sm">{selectedReviewedBy.username}</div>
+                            <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
                           </div>
                           <button
                             className="text-gray-400 hover:text-white transition-colors relative"
-                            onMouseEnter={() => setHoveredUser(user.id)}
+                            onMouseEnter={() => setHoveredUser(selectedReviewedBy)}
                             onMouseLeave={() => setHoveredUser(null)}
                           >
-                 <Info size={16} />
-                            {hoveredUser === user.id && <UserTooltip user={user} />}
+                            <Info size={16} />
+                            {hoveredUser === selectedReviewedBy && <UserTooltip user={selectedReviewedBy} />}
+                          </button>
+                          <button
+                            onClick={() => setSelectedReviewedBy(null)}
+                            className="text-gray-400 hover:text-white ml-2"
+                          >
+                            <X size={16} />
                           </button>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="relative mb-2">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                          <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={reviewedBySearchTerm}
+                            onChange={(e) => setReviewedBySearchTerm(e.target.value)}
+                            onFocus={() => setSearchFocusReviewedBy(true)}
+                            className="w-full bg-[#2a2a2a] text-white rounded-md pl-8 pr-4 py-2 text-sm border border-gray-700"
+                          />
+                        </div>    
+                    )}
+                    {searchFocusReviewedBy && (
+                        <div className="relative z-50 w-full mt-2 bg-[#2a2a2a] rounded-md border border-gray-700 shadow-lg">
+                          {data?.flatMap(company => 
+                              company.owners.map(owner => (
+                                <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                  <div
+                                    key={owner.id}
+                                    className="relative flex items-center gap-3 p-2 hover:bg-[#3a3a3a] cursor-pointer transition-color"
+                                    onClick={() => handleReviewedBySelect(owner)}
+                                  >
+                                    <img
+                                      src={systemUsers[0].avatar}
+                                      alt={owner.username}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="text-white text-sm">{owner.username}</div>
+                                      <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
+                                    </div>
+                                    <button
+                                      className="text-gray-400 hover:text-white transition-colors relative"
+                                      onMouseEnter={() => setHoveredUser(owner)}
+                                      onMouseLeave={() => setHoveredUser(null)}
+                                    >
+                                      <Info size={16} />
+                                      {hoveredUser === owner && <UserTooltip user={owner} />}
+                                    </button>
+                                  </div>
+                                </div>
+                          )))
+                          }
+                        </div>
+                    )}
                     </div>
                   </div>
                 </div>
