@@ -12,7 +12,7 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
-  const { data, isLoading, error } = useBudget();
+  const { data } = useBudget();
 
   const stateMapping: Record<StateChoices, StateInfo> = {
     IN_PROGRESS: {
@@ -30,7 +30,6 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
   };
 
   const handleBudgetClick = (budget: IBudget): void => {
-    console.log(budget.work_item.length);
     onBudgetClick(budget);
   };
 

@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { X, Check, Info, Search } from 'lucide-react';
 import useCompany from '../hooks/useCompany';
 import { IOwner } from '../api/endpoints/companies';
+import { BudgetFormData, IBudget } from '../api/endpoints/budgets';
+import { useCreateBudget } from '../hooks/useBudget';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  onCreateBudget: () => void;
+  onCreateBudget: (budget: IBudget) => void;
+
 }
 
 
@@ -89,7 +92,55 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
     setSelectedReviewedBy(user);
     setSearchFocusReviewedBy(false);
   };
+
   
+
+  const [formData, setFormData] = useState<BudgetFormData>({
+    company_id: '',
+    code: '',
+    name: '',
+    owner_id: null,
+    calculated_by_id: null,
+    reviewed_by_id: null,
+    direct_labor_factor: 1.005,
+    administration_percentage: 16,
+    utility_percentage: 15,
+    financing_percentage: 0,
+    iva_type: 'NO_IVA',
+    iva_percentage: 12,
+    use_medical_insurance: false
+  });
+  
+
+  const mutation = useCreateBudget();
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+
+  const handleSubmit = async () => {
+      const budgetData = {
+        ...formData,
+        owner_id: selectedOwner?.id || null,
+        calculated_by_id: selectedCalculatedBy?.id || null,
+        reviewed_by_id: selectedReviewedBy?.id || null
+      };
+
+      mutation.mutate(budgetData, {
+        onSuccess: (data) => {
+          onCreateBudget(data);
+        }
+      });
+    
+  };
+
 
   if (!isOpen) return null;
 
@@ -101,6 +152,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
     { id: 'otros', label: 'Otros', completed: activeTab === 'otros' }
   ];
 
+  // TODO: Corregir estilos en este tooltip
   const UserTooltip = ({ user }: { user: IOwner }) => (
     <div className="absolute z-50 bg-[#2a2a2a] text-white rounded-lg shadow-lg p-4 w-64 -translate-x-full left-0 mt-2">
       <div className="flex items-start gap-4 mb-3">
@@ -162,7 +214,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-white mb-2">Empresa</label>
-                    <select className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700">
+                    <select 
+                      className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
+                      name="company_id"
+                      onChange={handleInputChange}
+                      value={formData.company_id}
+                    >
                       <option>Seleccionar empresa</option>
                       {data?.map(company => (
                         <option key={company.id} value={company.id}>{company.name}</option>
@@ -171,16 +228,28 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                   </div>
                   <div>
                     <label className="block text-white mb-2">Código</label>
-                    <input type="text" className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" />
+                    <input 
+                      type="text" 
+                      className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
+                      name="code"
+                      onChange={handleInputChange}
+                      value={formData.code} 
+                    />
                   </div>
                 </div>
                 <div>
                   <label className="block text-white mb-2">Nombre</label>
-                  <input type="text" className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" />
+                  <input 
+                    type="text" 
+                    className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
+                    name="name"
+                    onChange={handleInputChange}
+                    value={formData.name} 
+                  />
                 </div>
                 <div className="relative">
                   <label className="block text-white mb-2">Propietario</label>
-                  <div className="relative">
+                  <div className="relative">  
                     <div 
                       className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 cursor-pointer flex items-center"
                       onClick={() => setIsOwnerDropdownOpen(!isOwnerDropdownOpen)}
@@ -289,35 +358,35 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                       )}
                       {searchFocusCalculatedBy && (
                           <div className="relative z-50 w-full mt-2 bg-[#2a2a2a] rounded-md border border-gray-700 shadow-lg">
-                            {data?.flatMap(company => 
-                              company.owners.map(owner => (
-                              <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                                <div
-                                  key={owner.id}
-                                  className="relative flex items-center gap-3 p-2 hover:bg-[#3a3a3a] cursor-pointer transition-color"
-                                  onClick={() => handleCalculatedBySelect(owner)}
-                                >
-                                  <img
-                                    src={systemUsers[0].avatar}
-                                    alt={owner.username}
-                                    className="w-8 h-8 rounded-full object-cover"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="text-white text-sm">{owner.username}</div>
-                                    <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
-                                  </div>
-                                  <button
-                                    className="text-gray-400 hover:text-white transition-colors relative"
-                                    onMouseEnter={() => setHoveredUser(owner)}
-                                    onMouseLeave={() => setHoveredUser(null)}
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                              {data?.flatMap(company => 
+                                company.owners.map(owner => (
+                                  <div
+                                    key={owner.id}
+                                    className="relative flex items-center gap-3 p-2 hover:bg-[#3a3a3a] cursor-pointer transition-color"
+                                    onClick={() => handleCalculatedBySelect(owner)}
                                   >
-                                    <Info size={16} />
-                                    {hoveredUser === owner && <UserTooltip user={owner} />}
-                                  </button>
-                                </div>
-                              </div>
-                              ))
-                            )}
+                                    <img
+                                      src={systemUsers[0].avatar}
+                                      alt={owner.username}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="text-white text-sm">{owner.username}</div>
+                                      <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
+                                    </div>
+                                    <button
+                                      className="text-gray-400 hover:text-white transition-colors relative"
+                                      onMouseEnter={() => setHoveredUser(owner)}
+                                      onMouseLeave={() => setHoveredUser(null)}
+                                    >
+                                      <Info size={16} />
+                                      {hoveredUser === owner && <UserTooltip user={owner} />}
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
                           </div>
                       )}
                     </div>
@@ -367,9 +436,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                     )}
                     {searchFocusReviewedBy && (
                         <div className="relative z-50 w-full mt-2 bg-[#2a2a2a] rounded-md border border-gray-700 shadow-lg">
-                          {data?.flatMap(company => 
+                          <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {data?.flatMap(company => 
                               company.owners.map(owner => (
-                                <div className="max-h-48 overflow-y-auto custom-scrollbar">
                                   <div
                                     key={owner.id}
                                     className="relative flex items-center gap-3 p-2 hover:bg-[#3a3a3a] cursor-pointer transition-color"
@@ -393,9 +462,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                                       {hoveredUser === owner && <UserTooltip user={owner} />}
                                     </button>
                                   </div>
-                                </div>
-                          )))
-                          }
+                              )))
+                            }
+                          </div>
                         </div>
                     )}
                     </div>
@@ -409,18 +478,23 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-white mb-2">Factor de labor directa</label>
+                    {/* TODO: Validat solo dos decimales */}
                     <input 
                       type="number" 
-                      defaultValue="1.005"
                       className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" 
+                      name="direct_labor_factor"
+                      onChange={handleInputChange}
+                      value={formData.direct_labor_factor}
                     />
                   </div>
                   <div>
                     <label className="block text-white mb-2">% Administración</label>
                     <input 
                       type="number" 
-                      defaultValue="16"
                       className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" 
+                      name="administration_percentage"
+                      onChange={handleInputChange}
+                      value={formData.administration_percentage}
                     />
                   </div>
                 </div>
@@ -429,16 +503,20 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                     <label className="block text-white mb-2">% Utilidad</label>
                     <input 
                       type="number" 
-                      defaultValue="15"
                       className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" 
+                      name="utility_percentage"
+                      onChange={handleInputChange}
+                      value={formData.utility_percentage}
                     />
                   </div>
                   <div>
                     <label className="block text-white mb-2">% Financiamiento</label>
                     <input 
                       type="number" 
-                      defaultValue="0"
                       className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" 
+                      name="financing_percentage"
+                      onChange={handleInputChange}
+                      value={formData.financing_percentage}
                     />
                   </div>
                 </div>
@@ -451,11 +529,25 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                   <label className="block text-white mb-4">IVA</label>
                   <div className="space-y-2">
                     <label className="flex items-center gap-2 text-gray-300">
-                      <input type="radio" name="iva" className="text-orange-500" />
+                      <input 
+                        type="radio" 
+                        name="iva_type" 
+                        className="text-orange-500"
+                        value="NO_IVA"
+                        onChange={handleInputChange}
+                        checked={formData.iva_type === 'NO_IVA'}
+                      />
                       Sin IVA
                     </label>
                     <label className="flex items-center gap-2 text-gray-300">
-                      <input type="radio" name="iva" className="text-orange-500" defaultChecked />
+                      <input 
+                        type="radio" 
+                        name="iva_type" 
+                        className="text-orange-500" 
+                        value="PRESUPUESTO_VALUACION"
+                        onChange={handleInputChange}
+                        checked={formData.iva_type === 'PRESUPUESTO_VALUACION'} 
+                      />
                       En Presupuesto y Valuación
                     </label>
                   </div>
@@ -465,8 +557,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
                   <div className="relative">
                     <input 
                       type="number" 
-                      defaultValue="12"
-                      className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700" 
+                      className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
+                      name="iva_percentage"
+                      onChange={handleInputChange}
+                      value={formData.iva_percentage}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
                   </div>
@@ -477,11 +571,22 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
             {activeTab === 'otros' && (
               <div className="space-y-4">
                 <label className="flex items-center gap-2 text-gray-300">
-                  <input type="checkbox" className="text-orange-500" />
+                  <input 
+                    type="checkbox" 
+                    className="text-orange-500"
+                    name="use_medical_insurance"
+                    onChange={handleInputChange}
+                    checked={formData.use_medical_insurance} 
+                  />
                   Usar Gastos Médicos e Implementos de Seguridad
                 </label>
+                {/* TODO: corregir este checkbox con el backend y la interfaz */}
                 <label className="flex items-center gap-2 text-gray-300">
-                  <input type="checkbox" className="text-orange-500" />
+                  <input 
+                    type="checkbox" 
+                    className="text-orange-500"
+                    name="useDoubleCostFactor"
+                  />
                   Aplicar doble factor de costo asociado
                 </label>
               </div>
@@ -503,7 +608,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
               <button 
                 onClick={() => {
                   if (activeTab === 'otros') {
-                    onCreateBudget();
+                    handleSubmit();
                   } else {
                     const currentIndex = tabs.findIndex(t => t.id === activeTab);
                     if (currentIndex < tabs.length - 1) {
