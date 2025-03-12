@@ -3,6 +3,7 @@ import { Plus, Copy, ArrowLeft, X, Trash, Edit2, Save, ChevronRight } from 'luci
 import BudgetItemModal from './BudgetItemModal';
 import CopyItemModal from './CopyItemModal';
 import { Equipment, IBudget, Labor, Material, WorkItem } from '../api/endpoints/budgets';
+import { IFormWorkItem } from '../api/endpoints/databases';
 
 interface BudgetViewProps {
   onBack: () => void;
@@ -319,6 +320,15 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'materiales' | 'equipos' | 'mano-de-obra'>('materiales');
+  const [detailBudget, setDetailBudget] = useState<IBudget>(budget)
+
+  const addWorkItem = (workItem: WorkItem): void => {
+    setDetailBudget(prevBudget => ({
+      ...prevBudget,
+      work_item: [...prevBudget.work_item, workItem]
+    }));
+    handleItemClick(workItem)
+  };
 
   const handleItemClick = (item: WorkItem) => {
     if (selectedItem?.id === item.id) {
@@ -458,9 +468,9 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
 
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Proyecto Example</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">{budget.name}</h1>
           
-          <p className="text-gray-400">Constructora XYZ</p>
+          <p className="text-gray-400">{budget.company.name}</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -495,13 +505,13 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
               <div>Total</div>
             </div>
 
-            {(!budget || budget.work_item.length === 0) ? (
+            {(!detailBudget || detailBudget.work_item.length === 0) ? (
               <div className="p-8 text-center">
                 <p className="text-gray-400">No hay partidas creadas. Haga clic en "Nueva Partida" para comenzar.</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-800">
-                {budget.work_item.map((item) => (
+                {detailBudget.work_item.map((item) => (
                   <div
                     key={item.id}
                     className={`grid grid-cols-8 gap-4 p-4 text-sm cursor-pointer transition-colors ${
@@ -512,7 +522,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                     <div className="text-white">{item.code}</div>
                     <div className="col-span-2 text-white">{item.description}</div>
                     <div className="text-white">{item.unit}</div>
-                    <div className="text-white">{item.materials.length}</div>
+                    <div className="text-white">{item.material.length}</div>
                     <div className="text-white">{item.equipment.length}</div>
                     <div className="text-white">{item.labor.length}</div>
                     {/* <div className="text-white">{item.labor.length}</div> */}
@@ -579,7 +589,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                       : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
                   }`}
                 >
-                  Materiales ({selectedItem.materials.length})
+                  Materiales ({selectedItem.material.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('equipos')}
@@ -633,7 +643,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.materials.map((material: Material) => (
+                    {selectedItem.material.map((material: Material) => (
                       <div key={material.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
                         <div className="text-white">{material.code}</div>
                         <div className="text-white">{material.description}</div>
@@ -812,25 +822,8 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
       <BudgetItemModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        onSave={(item) => {
-          const newItem = {
-            id: items.length + 1,
-            codigo: `PAR00${items.length + 1}`,
-            description: item.description,
-            unit: item.unit,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total,
-            materiales: [],
-            equipos: [],
-            manoDeObra: [],
-            materialesTotal: 0,
-            equiposTotal: 0,
-            manoDeObraTotal: 0
-          };
-          setItems([...items, newItem]);
-          setIsModalOpen(false);
-        }}
+        detailBudget={detailBudget}
+        onAdd={addWorkItem}
       />
 
       {copyModalType && (
