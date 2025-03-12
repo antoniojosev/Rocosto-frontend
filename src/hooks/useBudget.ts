@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchBudget, IBudget, BudgetFormData, createBudget, getBudgetById } from '../api/endpoints/budgets';
+import { fetchBudget, createBudget, getBudgetById } from '../api/endpoints/budgets';
+import { IBudget, IBudgetCreate } from '../types/Budget';
 
 const useBudget = () => {
   return useQuery<IBudget[], Error, IBudget[], readonly ['Budgets']>({
@@ -9,7 +10,7 @@ const useBudget = () => {
 };
 
 export const useCreateBudget = () => {
-  return useMutation<IBudget, Error, BudgetFormData>({
+  return useMutation<IBudget, Error, IBudgetCreate>({
     mutationFn: createBudget,
     onError: (error) => {
       console.error('Error al crear presupuesto:', error);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, ArrowUpDown } from 'lucide-react';
 import Modal from './Modal';
 import useBudget from '../hooks/useBudget';
-import { IBudget, StateChoices, StateInfo} from '../api/endpoints/budgets';
+import { IBudget, StateChoices, StateInfo} from '../types/Budget';
 
 interface BudgetListViewProps {
   onBudgetClick: (budget: IBudget) => void;

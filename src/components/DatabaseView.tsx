@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Copy, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUpDown } from 'lucide-react';
 import DatabaseModal from './DatabaseModal';
 import DatabaseItemsView from './DatabaseItemsView';
 

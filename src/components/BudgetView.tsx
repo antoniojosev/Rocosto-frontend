@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Plus, Copy, ArrowLeft, X, Trash, Edit2, Save, ChevronRight } from 'lucide-react';
 import BudgetItemModal from './BudgetItemModal';
 import CopyItemModal from './CopyItemModal';
-import { Equipment, IBudget, Labor, Material, WorkItem } from '../api/endpoints/budgets';
-import { IFormWorkItem } from '../api/endpoints/databases';
+import { IEquipment, ILabor, IWorkItem, IMaterial } from '../types/Database';
+import { IBudget } from '../types/Budget';
+
 
 interface BudgetViewProps {
   onBack: () => void;
@@ -315,22 +316,22 @@ const mockItems = [
 const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [items, setItems] = useState<any[]>(mockItems);
-  const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<IWorkItem | null>(null);
   const [copyModalType, setCopyModalType] = useState<'material' | 'equipo' | 'mano-de-obra' | null>(null);
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'materiales' | 'equipos' | 'mano-de-obra'>('materiales');
   const [detailBudget, setDetailBudget] = useState<IBudget>(budget)
 
-  const addWorkItem = (workItem: WorkItem): void => {
+  const addWorkItem = (IWorkItem: IWorkItem): void => {
     setDetailBudget(prevBudget => ({
       ...prevBudget,
-      work_item: [...prevBudget.work_item, workItem]
+      work_item: [...prevBudget.work_item, IWorkItem]
     }));
-    handleItemClick(workItem)
+    handleItemClick(IWorkItem)
   };
 
-  const handleItemClick = (item: WorkItem) => {
+  const handleItemClick = (item: IWorkItem) => {
     if (selectedItem?.id === item.id) {
       // If clicking the same item, toggle details visibility
       setDetailsVisible(!detailsVisible);
@@ -643,7 +644,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.material.map((material: Material) => (
+                    {selectedItem.material.map((material: IMaterial) => (
                       <div key={material.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
                         <div className="text-white">{material.code}</div>
                         <div className="text-white">{material.description}</div>
@@ -709,7 +710,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.equipment.map((equipo: Equipment) => (
+                    {selectedItem.equipment.map((equipo: IEquipment) => (
                       <div key={equipo.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
                         <div className="text-white">{equipo.code}</div>
                         <div className="text-white">{equipo.description}</div>
@@ -777,7 +778,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.labor.map((mano: Labor) => (
+                    {selectedItem.labor.map((mano: ILabor) => (
                       <div key={mano.code} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
                         <div className="text-white">{mano.code}</div>
                         <div className="text-white">{mano.description}</div>

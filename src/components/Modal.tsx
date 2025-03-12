@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Check, Info, Search } from 'lucide-react';
 import useCompany from '../hooks/useCompany';
 import { IOwner } from '../api/endpoints/companies';
-import { BudgetFormData, IBudget } from '../api/endpoints/budgets';
+import { IBudgetCreate, IBudget } from '../api/endpoints/budgets';
 import { useCreateBudget } from '../hooks/useBudget';
 
 interface ModalProps {
@@ -95,7 +95,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, activeTab, setActiveTab,
 
   
 
-  const [formData, setFormData] = useState<BudgetFormData>({
+  const [formData, setFormData] = useState<IBudgetCreate>({
     company_id: '',
     code: '',
     name: '',

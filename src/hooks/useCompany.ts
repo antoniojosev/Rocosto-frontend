@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchCompany, ICompany } from '../api/endpoints/companies';
+import { fetchCompany } from '../api/endpoints/companies';
+import { ICompany } from '../types/Company';
 
 const useCompany = () => {
     return useQuery<ICompany[], Error, ICompany[], readonly ['companies']>({
