@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import './index.css'
 import Sidebar from './components/Sidebar'
-import Modal from './components/Modal';
-import BudgetListView from './components/BudgetListView';
+import Modal from './views/budgets/BudgetCreateModal';
+import BudgetListView from './views/budgets/BudgetListView';
 import BudgetView from './components/BudgetView';
 import DatabaseView from './components/DatabaseView';
-import { IBudget } from './api/endpoints/budgets';
+import { IBudget } from './types/Budget';
+
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);

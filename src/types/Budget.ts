@@ -64,4 +64,5 @@ export interface IBudgetCreate {
     iva_percentage: number;
     use_medical_insurance: boolean;
     company_id: string;
+    use_associated_cost_factor: boolean
 }
