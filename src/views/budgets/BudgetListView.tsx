@@ -23,7 +23,10 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
   return (
     <div className="p-6">
       <Header
-        setIsModalOpen={setIsModalOpen} 
+        setIsModalOpen={setIsModalOpen}
+        title='Presupuesto'
+        subtitle='Gestione sus presupuestos y análisis de precios unitarios'
+        titleButton='Nuevo presupuesto'
       />
 
       <SearchBar onSearch={setSearchTerm}/>

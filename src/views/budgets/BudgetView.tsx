@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, Copy, ArrowLeft, X, Trash, Edit2, Save, ChevronRight } from 'lucide-react';
-import BudgetItemModal from './BudgetItemModal';
-import CopyItemModal from './CopyItemModal';
-import { IEquipment, ILabor, IWorkItem, IMaterial } from '../types/Database';
-import { IBudget } from '../types/Budget';
+import { IBudget } from '../../types/Budget';
+import { IWorkItem } from '../../types/Database';
+import BudgetItemModal from '../../components/BudgetItemModal';
+import CopyItemModal from '../../components/CopyItemModal';
+import Header from './components/header';
+import LeftBudgetContainer from './components/leftBudgetContainer';
+import RightBudgetContainer from './components/rightBudgetContainer';
+
 
 
 interface BudgetViewProps {
@@ -445,7 +449,6 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
   };
 
   const handleSaveChanges = () => {
-    // Here you would typically save the changes to your backend
     console.log('Saving changes:', selectedItem);
   };
   const calculateTotal = (item: any) => {
@@ -458,6 +461,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
 
   return (
     <div className="p-6 relative">
+
       
       <button
         onClick={onBack}
@@ -466,356 +470,42 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
         <ArrowLeft size={20} />
         Volver a Presupuestos
       </button>
-
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2">{budget.name}</h1>
-          
-          <p className="text-gray-400">{budget.company.name}</p>
-        </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          <Plus size={20} />
-          Nueva Partida
-        </button>
-      </div>
-
+    	<Header
+          setIsModalOpen={setIsModalOpen} 
+          title={budget.name}
+          subtitle={budget.company.name}
+          titleButton='Nueva partida'
+      />
+     
       <div className="flex">
         {/* Left side - Budget Summary */}
         <div className={`bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ${
           detailsVisible && selectedItem ? 'flex-1 mr-6' : 'w-full'
         }`}>
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Resumen del Presupuesto</h2>
-              <div className="text-right">
-                <p className="text-gray-400 text-sm">Total del Presupuesto</p>
-                <p className="text-white text-2xl font-bold">{getPresupuestoTotal()?.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-8 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
-              <div>Código</div>
-              <div className="col-span-2">Descripción</div>
-              <div>Unidad</div>
-              <div>Materiales</div>
-              <div>Equipos</div>
-              <div>Mano de Obra</div>
-              <div>Total</div>
-            </div>
-
-            {(!detailBudget || detailBudget.work_item.length === 0) ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-400">No hay partidas creadas. Haga clic en "Nueva Partida" para comenzar.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-800">
-                {detailBudget.work_item.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`grid grid-cols-8 gap-4 p-4 text-sm cursor-pointer transition-colors ${
-                      selectedItem?.id === item.id ? 'bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'
-                    }`}
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <div className="text-white">{item.code}</div>
-                    <div className="col-span-2 text-white">{item.description}</div>
-                    <div className="text-white">{item.unit}</div>
-                    <div className="text-white">{item.material.length}</div>
-                    <div className="text-white">{item.equipment.length}</div>
-                    <div className="text-white">{item.labor.length}</div>
-                    {/* <div className="text-white">{item.labor.length}</div> */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-white">{item.total_cost}$</span>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(item);
-                        }}
-                        className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#333] hover:bg-[#444] transition-colors ${
-                          selectedItem?.id === item.id && detailsVisible ? 'bg-white text-black' : ''
-                        }`}
-                        title={selectedItem?.id === item.id && detailsVisible ? "Ocultar detalles" : "Ver detalles"}
-                      >
-                        <ChevronRight size={18} className={`transition-transform duration-300 ${
-                          selectedItem?.id === item.id && detailsVisible ? 'rotate-90 text-black' : 'text-white'
-                        }`} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <LeftBudgetContainer
+              detailBudget={detailBudget}
+              handleItemClick={handleItemClick}
+              selectedItem={selectedItem}
+              detailsVisible={detailsVisible}
+              getPresupuestoTotal={getPresupuestoTotal}
+            />
         </div>
 
         {/* Right side - Item Details */}
         <div 
           className={` ${
-            detailsVisible && selectedItem ? 'bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ease-in-out opacity-100 translate-x-0 w-[500px] h-3/4' : 'opacity-0 translate-x-20 w-0 overflow-hidden'
+            detailsVisible && selectedItem ? 'bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ease-in-out opacity-100 translate-x-0 w-7/12 h-3/4' : 'opacity-0 translate-x-20 w-0 overflow-hidden'
           }`}
         >
           {selectedItem && (
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-white text-lg font-semibold">{selectedItem.code}</h3>
-                  <p className="text-gray-400 text-sm mt-1">{selectedItem.description}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleSaveChanges()}
-                    className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    <Save size={16} />
-                    Guardar Cambios
-                  </button>
-                  <button
-                    onClick={handleCloseDetails}
-                    className="flex items-center justify-center w-8 h-8 rounded-full bg-[#333] hover:bg-[#444] transition-colors"
-                  >
-                    <X size={18} className="text-white" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-2 mb-6">
-                <button
-                  onClick={() => setActiveTab('materiales')}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                    activeTab === 'materiales'
-                      ? 'bg-white text-black'
-                      : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Materiales ({selectedItem.material.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('equipos')}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                    activeTab === 'equipos'
-                      ? 'bg-white text-black'
-                      : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Equipos ({selectedItem.equipment.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('mano-de-obra')}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                    activeTab === 'mano-de-obra'
-                      ? 'bg-white text-black'
-                      : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Mano de Obra ({selectedItem.labor.length})
-                </button>
-              </div>
-
-              {activeTab === 'materiales' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-white font-medium">Materiales</h4>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCopyItem('material')}
-                        className="flex items-center gap-2 px-3 py-1 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors text-sm"
-                      >
-                        <Copy size={16} />
-                        Copiar Material
-                      </button>
-                      <button
-                        className="flex items-center gap-2 px-3 py-1 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                      >
-                        <Plus size={16} />
-                        Agregar Material
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-5 gap-4 mb-2 text-sm text-gray-400">
-                    <div>Código</div>
-                    <div>Descripción</div>
-                    <div>Cantidad</div>
-                    <div>Costo</div>
-                    <div>Total</div>
-                  </div>
-
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.material.map((material: IMaterial) => (
-                      <div key={material.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
-                        <div className="text-white">{material.code}</div>
-                        <div className="text-white">{material.description}</div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={material.cost}
-                            onChange={(e) => handleUpdateQuantity(e, 'material', material)}
-                            className="bg-[#1a1a1a] text-white text-sm rounded px-2 py-1 w-20 border border-gray-700"
-                          />
-                        </div>
-                        <div className="text-white">{material.cost}</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-white">{material.cost}</span>
-                          <div className="flex gap-2">
-                            
-                            <button
-                              onClick={() => handleDeleteItem('material', material)}
-                              className="text-gray-400 hover:text-white"
-                            >
-                              <Trash size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-700 text-right">
-                    <span className="text-gray-400 text-sm">Total Materiales: </span>
-                    <span className="text-white font-semibold">{selectedItem.unit}</span>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'equipos' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-white font-medium">Equipos</h4>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCopyItem('equipo')}
-                        className="flex items-center gap-2 px-3 py-1 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors text-sm"
-                      >
-                        <Copy size={16} />
-                        Copiar Equipo
-                      </button>
-                      <button
-                        className="flex items-center gap-2 px-3 py-1 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                      >
-                        <Plus size={16} />
-                        Agregar Equipo
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-5 gap-4 mb-2 text-sm text-gray-400">
-                    <div>Código</div>
-                    <div>Descripción</div>
-                    <div>Cantidad</div>
-                    <div>Costo</div>
-                    <div>Total</div>
-                  </div>
-
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.equipment.map((equipo: IEquipment) => (
-                      <div key={equipo.id} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
-                        <div className="text-white">{equipo.code}</div>
-                        <div className="text-white">{equipo.description}</div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={equipo.depreciation}
-                            onChange={(e) => handleUpdateQuantity(e, 'equipo', equipo)}
-                            className="bg-[#1a1a1a] text-white text-sm rounded px-2 py-1 w-20 border border-gray-700"
-                          />
-                        </div>
-                        <div className="text-white">{equipo.cost}</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-white">{equipo.cost}</span>
-                          <div className="flex gap-2">
-                            <button className="text-gray-400 hover:text-white">
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem('equipo', equipo)}
-                              className="text-gray-400 hover:text-white"
-                            >
-                              <Trash size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-700 text-right">
-                    <span className="text-gray-400 text-sm">Total Equipos: </span>
-                    <span className="text-white font-semibold">{selectedItem.yield_rate}</span>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'mano-de-obra' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-white font-medium">Mano de Obra</h4>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCopyItem('mano-de-obra')}
-                        className="flex items-center gap-2 px-3 py-1 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors text-sm"
-                      >
-                        <Copy size={16} />
-                        Copiar Mano de Obra
-                      </button>
-                      <button
-                        className="flex items-center gap-2 px-3 py-1 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                      >
-                        <Plus size={16} />
-                        Agregar Mano de Obra
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-5 gap-4 mb-2 text-sm text-gray-400">
-                    <div>Código</div>
-                    <div>Descripción</div>
-                    <div>Cantidad</div>
-                    <div>Costo</div>
-                    <div>Total</div>
-                  </div>
-
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    {selectedItem.labor.map((mano: ILabor) => (
-                      <div key={mano.code} className="grid grid-cols-5 gap-4 items-center bg-[#2a2a2a] p-3 rounded-lg">
-                        <div className="text-white">{mano.code}</div>
-                        <div className="text-white">{mano.description}</div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={mano.hourly_cost}
-                            onChange={(e) => handleUpdateQuantity(e, 'mano-de-obra', mano)}
-                            className="bg-[#1a1a1a] text-white text-sm rounded px-2 py-1 w-20 border border-gray-700"
-                          />
-                        </div>
-                        <div className="text-white">{mano.hourly_cost}</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-white">{mano.hourly_cost}</span>
-                          <div className="flex gap-2">
-                            <button className="text-gray-400 hover:text-white">
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem('mano-de-obra', mano)}
-                              className="text-gray-400 hover:text-white"
-                            >
-                              <Trash size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-700 text-right">
-                    <span className="text-gray-400 text-sm">Total Mano de Obra: </span>
-                    <span className="text-white font-semibold">{selectedItem.yield_rate}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            // <RightBudgetContainer
+            //   selectedItem={selectedItem}
+            //   handleCloseDetails={handleCloseDetails}
+            //   handleSaveChanges={handleSaveChanges}
+            // />
+            <RightBudgetContainer
+              selectedItem={selectedItem}
+            />
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createWorkItem, fetchDatabase} from '../api/endpoints/databases';
+import { createWorkItem, fetchDatabase, getUnits} from '../api/endpoints/databases';
 import { IDatabase, IWorkItem } from '../types/Database';
 
 const useDatabase = () => {
@@ -16,6 +16,13 @@ export const useCreateWorkItem = () => {
     onError: (error) => {
       console.error('Error al crear partida:', error);
     }
+  });
+};
+
+export const useUnits = () => {
+  return useQuery<IUnit[], Error, IUnit[], readonly ['units']>({
+    queryKey: ['units'] as const,
+    queryFn: getUnits,
   });
 };
 

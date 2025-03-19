@@ -3,9 +3,9 @@ import './index.css'
 import Sidebar from './components/Sidebar'
 import Modal from './views/budgets/BudgetCreateModal';
 import BudgetListView from './views/budgets/BudgetListView';
-import BudgetView from './components/BudgetView';
 import DatabaseView from './components/DatabaseView';
 import { IBudget } from './types/Budget';
+import BudgetView from './views/budgets/BudgetView';
 
 
 function App() {
@@ -15,6 +15,7 @@ function App() {
   const [selectedBudget, setSelectedBudget] = useState<IBudget | null>(null);
 
   const handleBudgetClick = (budget : IBudget): void => {
+    console.log(budget)
     setSelectedBudget(budget);
     setCurrentView('budget-detail');
   };
@@ -50,8 +51,6 @@ function App() {
         <Modal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
           onCreateBudget={() => {
             setIsModalOpen(false);
             setCurrentView('budget-detail');

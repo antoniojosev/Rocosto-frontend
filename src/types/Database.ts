@@ -19,13 +19,21 @@ export interface IWorkItem {
     budget_id: string
 }
 
+export interface IWorkItemCreate {
+    material: IMaterial[]
+    equipment: IEquipment[]
+    labor: ILabor[]
+    budget_id: string
+}
+
 export interface IMaterial {
     id: string
     code: string
     description: string
     unit: IUnit
-    cost: string
+    cost: number
     database: IDatabase
+    quantity: number
 }
 
 export interface IUnit {
@@ -45,15 +53,17 @@ export interface IEquipment {
     id: string
     code: string
     description: string
-    cost: string
-    depreciation: string
+    cost: number
+    depreciation: number
     database: IDatabase
+    quantity: number
 }
 
 export interface ILabor {
     id: string
     code: string
     description: string
-    hourly_cost: string
+    hourly_cost: number
     database: IDatabase
+    quantity: number
 }
