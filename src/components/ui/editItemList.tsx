@@ -72,7 +72,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
             const computedValue = isNaN(rawValue) || rawValue === null ? 0 : rawValue;
           fieldElement = (
             <p
-              className={`text-white p-2 text-right font-bold ${col.className || ''}`}
+              className={`text-white p-2 font-bold ${col.className || ''}`}
               style={{ gridColumn: col.colSpan ? `span ${col.colSpan}` : undefined }}
             >
               {computedValue}$

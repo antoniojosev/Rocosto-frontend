@@ -421,21 +421,21 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
         if (type === 'material') {
           return {
             ...budgetItem,
-            materiales: budgetItem.materiales.map((mat: any) => 
+            materiales: budgetItem.materiales.map((mat: any) =>
               mat === item ? { ...mat, cantidad: Number(e.target.value) } : mat
             )
           };
         } else if (type === 'equipo') {
           return {
             ...budgetItem,
-            equipos: budgetItem.equipos.map((eq: any) => 
+            equipos: budgetItem.equipos.map((eq: any) =>
               eq === item ? { ...eq, cantidad: Number(e.target.value) } : eq
             )
           };
         } else if (type === 'mano-de-obra') {
           return {
             ...budgetItem,
-            manoDeObra: budgetItem.manoDeObra.map((mo: any) => 
+            manoDeObra: budgetItem.manoDeObra.map((mo: any) =>
               mo === item ? { ...mo, cantidad: Number(e.target.value) } : mo
             )
           };
@@ -462,7 +462,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
   return (
     <div className="p-6 relative">
 
-      
+
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-gray-400 hover:text-white mb-6"
@@ -470,48 +470,56 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
         <ArrowLeft size={20} />
         Volver a Presupuestos
       </button>
-    	<Header
-          setIsModalOpen={setIsModalOpen} 
-          title={budget.name}
-          subtitle={budget.company.name}
-          titleButton='Nueva partida'
+      <Header
+        setIsModalOpen={setIsModalOpen}
+        title={budget.name}
+        subtitle={budget.company.name}
+        titleButton='Nueva partida'
       />
-     
+
       <div className="flex">
         {/* Left side - Budget Summary */}
-        <div className={`bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ${
-          detailsVisible && selectedItem ? 'flex-1 mr-6' : 'w-full'
-        }`}>
-            <LeftBudgetContainer
-              detailBudget={detailBudget}
-              handleItemClick={handleItemClick}
-              selectedItem={selectedItem}
-              detailsVisible={detailsVisible}
-              getPresupuestoTotal={getPresupuestoTotal}
-            />
+        <div className={`bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ${detailsVisible && selectedItem ? 'flex-1 mr-6' : 'w-full'
+          }`}>
+          <LeftBudgetContainer
+            detailBudget={detailBudget}
+            handleItemClick={handleItemClick}
+            selectedItem={selectedItem}
+            detailsVisible={detailsVisible}
+            getPresupuestoTotal={getPresupuestoTotal}
+          />
         </div>
 
         {/* Right side - Item Details */}
-        <div 
-          className={` ${
-            detailsVisible && selectedItem ? 'bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ease-in-out opacity-100 translate-x-0 w-7/12 h-3/4' : 'opacity-0 translate-x-20 w-0 overflow-hidden'
-          }`}
+        <div
+          className={` ${detailsVisible && selectedItem ? 'bg-[#1a1a1a] rounded-lg border border-gray-800 transition-all duration-300 ease-in-out opacity-100 translate-x-0 w-7/12 h-3/4' : 'opacity-0 translate-x-20 w-0 overflow-hidden'
+            }`}
         >
           {selectedItem && (
-            // <RightBudgetContainer
-            //   selectedItem={selectedItem}
-            //   handleCloseDetails={handleCloseDetails}
-            //   handleSaveChanges={handleSaveChanges}
-            // />
             <RightBudgetContainer
-              selectedItem={selectedItem}
+              selectedItem={{
+                ...selectedItem,
+                material: selectedItem.material?.map(m => ({
+                  ...m,
+                  quantity: m.quantity === null || m.quantity === undefined ? 1 : m.quantity
+                })),
+                labor: selectedItem.labor?.map(l => ({
+                  ...l,
+                  quantity: l.quantity === null || l.quantity === undefined ? 1 : l.quantity
+                })),
+                equipment: selectedItem.equipment?.map(e => ({
+                  ...e,
+                  quantity: e.quantity === null || e.quantity === undefined ? 1 : e.quantity
+                }))
+              }}
+              setSelectedItem={setSelectedItem}
             />
           )}
         </div>
       </div>
 
-      <BudgetItemModal 
-        isOpen={isModalOpen} 
+      <BudgetItemModal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         detailBudget={detailBudget}
         onAdd={addWorkItem}
