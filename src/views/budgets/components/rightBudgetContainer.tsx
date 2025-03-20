@@ -10,6 +10,8 @@ interface rightBudgetContainerProps {
 
 function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetContainerProps) {
   const [activeTab, setActiveTab] = useState('material');
+  type ValidationError = { index: number , item: any, errors: { field: string, message: string }[] };
+  const [errors, setErrors] = useState<ValidationError[]>([]);
 
   const handleNewItem = (key: string) => {
     const tab = tabsConfig.find(t => t.key === key);
@@ -31,17 +33,19 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
 
 
   const handleUpdateItem = (key: string, index: number, field: string, value: any) => {
+
+
     const updatedItems = (selectedItem[key as keyof IWorkItem] as any[]).map((item, i) => {
       if (i === index) {
         const updatedItem = { ...item, [field]: value };
         const tabConfig = tabsConfig.find(tab => tab.key === key);
-        
+
         const compute = tabConfig?.compute;
         return { ...updatedItem, total: compute ? compute(updatedItem) : 15 };
       }
       return item;
     });
-    
+
     const newCategoryTotal = updatedItems.reduce((acc: number, item) => acc + (item.total || 0), 0);
 
     const updatedItem = {
@@ -52,8 +56,56 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
 
     setSelectedItem(updatedItem);
 
+    
+    const validationErrors: ValidationError[] = [];
 
-    console.log(updatedItem)
+
+    const tab = tabsConfig.find(tab => tab.key === key);
+    const updateValidationBudgetItem = (updatedItem[key as keyof IWorkItem] as any[]).map((item, i) => {
+    
+      Object.keys(item).forEach(attr => {
+        tab?.columns.forEach(col => {
+  
+          if (col.key === attr && col.validation) {
+            col.validation.forEach(rule => {
+              if (rule.required && !item[attr]) {
+
+                const existingError = validationErrors.find(error => error.index === i);
+                if (existingError) {
+                  existingError.errors.push({
+                    field: col.key,
+                    message: `${col.label} es requerido`
+                  });
+                } else {
+                  validationErrors.push({
+                    item: item,
+                    index: i,
+                    errors: [{
+                      field: col.key,
+                      message: `${col.label} es requerido`
+                    }]
+                  });
+                }
+              }
+              // Add more validation rules here as needed
+            });``
+          }
+  
+        });
+  
+  
+      });
+    
+    });
+
+    if (validationErrors.length > 0) {
+      console.error('Errores de validación:', validationErrors);
+      setErrors(validationErrors);
+      return;
+    }
+
+
+    // console.log(updatedItem)
   };
 
 
@@ -64,11 +116,11 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
       count: selectedItem.material.length,
       compute: (item: IMaterial) => item.quantity * item.cost,
       columns: [
-        { key: 'code', label: 'Código', type: 'text', colSpan: 1 },
-        { key: 'description', label: 'Descripción', type: 'text', colSpan: 2 },
-        { key: 'unit', label: 'Unidad', type: 'select', colSpan: 1 },
-        { key: 'quantity', label: 'Cantidad', type: 'number', colSpan: 1 },
-        { key: 'cost', label: 'Costo', type: 'number', colSpan: 1 },
+        { key: 'code', label: 'Código', type: 'text', colSpan: 1, validation: [{ required: true }] },
+        { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+        { key: 'unit', label: 'Unidad', type: 'select', colSpan: 1, validation: [{ required: true }] },
+        { key: 'quantity', label: 'Cantidad', type: 'number', colSpan: 1, validation: [{ required: true }] },
+        { key: 'cost', label: 'Costo', type: 'number', colSpan: 1, validation: [{ required: true }] },
         { key: 'total', label: 'Total', type: 'display', colSpan: 1, compute: (item: IMaterial) => item.quantity * item.cost }
       ]
     },
@@ -95,7 +147,7 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
       key: 'labor',
       label: 'Mano de Obra',
       count: selectedItem.labor.length,
-      compute: (item: ILabor) => item.quantity * item.hourly_cost,  
+      compute: (item: ILabor) => item.quantity * item.hourly_cost,
       columns: [
         { key: 'code', label: 'Código', type: 'text' },
         { key: 'description', label: 'Descripción', type: 'text', colSpan: 2 },
@@ -126,8 +178,8 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === tab.key
-                ? 'bg-white text-black'
-                : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
+              ? 'bg-white text-black'
+              : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
               }`}
           >
             {tab.label} ({tab.count})
@@ -135,7 +187,7 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
         ))}
       </div>
 
-      {tabsConfig.map((tab, index) => (
+      {tabsConfig.map((tab) => (
         activeTab === tab.key && (
           <EditWorkItemTable
             key={tab.key}
@@ -144,7 +196,7 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
             handleNewItem={handleNewItem}
             handleUpdateItem={handleUpdateItem}
             tab={tab.key}
-            index={index}
+            errorsInWorkItem={errors}
           />
         )
       ))}

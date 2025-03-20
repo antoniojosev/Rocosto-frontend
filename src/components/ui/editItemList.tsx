@@ -1,7 +1,5 @@
-import React from 'react';
-import { useFormContext } from 'react-hook-form';
+import React, { useState } from 'react';
 import { Trash } from 'lucide-react';
-import { IUnit } from '../../types/Database';
 import { useUnits } from '../../hooks/useDatabases';
 
 interface Column {
@@ -14,6 +12,9 @@ interface Column {
   compute?: (item: any) => any;
 }
 
+type ValidationError = { index: number, item: any, errors: { field: string, message: string }[] };
+
+
 interface EditListItemProps {
   columns: Column[];
   gridCols?: number;
@@ -22,6 +23,7 @@ interface EditListItemProps {
   className?: string;
   tab: string;
   index: number;
+  errors: ValidationError | null;
 }
 
 
@@ -32,11 +34,12 @@ const EditListItem: React.FC<EditListItemProps> = ({
   className,
   onChange,
   tab,
-  index
+  index,
+  errors
 }) => {
   const { data: units = [] } = useUnits();
   const baseFieldClass = 'bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700';
-
+  // TODO: corregir los estilos del error en el select 
   return (
     <div
       key={index}
@@ -45,6 +48,10 @@ const EditListItem: React.FC<EditListItemProps> = ({
     >
       {columns.map((col, idx) => {
         const isLast = idx === columns.length - 1;
+        const hasError = errors?.errors.some(error => error.field === col.key);
+        const errorClass = hasError ? 'border-red-500 placeholder-red-500' : '';
+        const errorPlaceHolder = hasError ? errors?.errors.find(error => error.field === col.key)?.message : '';
+
         let fieldElement: JSX.Element;
 
         if (col.type === 'select') {
@@ -52,7 +59,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
           fieldElement = (
             <select
               defaultValue={defaultSelectValue}
-              className={`${baseFieldClass} ${col.className || ''}`}
+              className={`${baseFieldClass} ${col.className || ''} ${errorClass}`}
               style={{ gridColumn: col.colSpan ? `span ${col.colSpan}` : undefined }}
               onChange={(e) => onChange(tab, index, col.key, e.target.value)}
             >
@@ -62,7 +69,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
                 </option>
               ) : (
                 <option value="" disabled>
-                  {col.label}
+                  {errorPlaceHolder || col.label}
                 </option>
               )}
               {units
@@ -85,34 +92,38 @@ const EditListItem: React.FC<EditListItemProps> = ({
             </p>
           );
         } else {
-            const defaultValue = col.type === 'number' ? (item[col.key] ?? 0) : (item[col.key] ?? '');
+          const defaultValue = col.type === 'number' ? (item[col.key] ?? 0) : (item[col.key] ?? '');
           fieldElement = (
             <input
               type={col.type}
               onChange={(e) => onChange(tab, index, col.key, e.target.value)}
               defaultValue={defaultValue}
-              className={`${baseFieldClass} ${col.className || ''}`}
-              placeholder={col.label}
+              className={`${baseFieldClass} ${col.className || ''} ${errorClass}`}
+              placeholder={errorPlaceHolder || col.label}
               style={{ gridColumn: col.colSpan ? `span ${col.colSpan}` : undefined }}
             />
           );
         }
 
-        if (isLast) {
-          return (
-            <div key={idx} className="grid grid-cols-2 items-center justify-between">
-              {fieldElement}
-              <button
-                type="button"
-                className="text-gray-400 hover:text-white ml-2"
-              >
-                <Trash size={16} />
-              </button>
-            </div>
-          );
-        }
 
-        return React.cloneElement(fieldElement, { key: idx });
+        return (  
+          <React.Fragment key={idx}>
+            {isLast ? (
+              <div className="grid grid-cols-2 items-center justify-between">
+                {fieldElement}
+                <button
+                  type="button"
+                  className="text-gray-400 hover:text-white ml-2"
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
+            ) : (
+              fieldElement
+            )}
+            
+          </React.Fragment>
+        );
       })}
     </div>
   );
