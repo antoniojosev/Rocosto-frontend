@@ -183,12 +183,12 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === tab.key
+            className={`w-full px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === tab.key
               ? 'bg-white text-black'
               : 'bg-[#2a2a2a] text-gray-300 hover:text-white'
               }`}
           >
-            {tab.label} ({tab.count})
+            {tab.label} ( {tab.count} ) {errors[tab.key]?.length > 0 && <span className="text-red-500">*</span>}
           </button>
         ))}
       </div>
