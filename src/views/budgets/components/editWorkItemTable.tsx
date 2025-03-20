@@ -51,18 +51,21 @@ const EditWorkItemTable: React.FC<EditWorkItemTableProps> = ({
 
             <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                 {
-                    workItem[tab].map((item, index) => (
-                        <EditListItem
-                            key={item.id}
-                            item={item}
-                            columns={columns}
-                            gridCols={columns.length + 1}
-                            onChange={handleUpdateItem}
-                            tab={tab}
-                            index={index}
-                            errors={errorsInWorkItem.find(error => error.index === index) || null}
-                        />
-                    ))
+                    workItem[tab].map((item, index) => {
+                        const itemErrors = errorsInWorkItem.filter(error => error.index === index)[0];
+                        return (
+                            <EditListItem
+                                key={item.id}
+                                item={item}
+                                columns={columns}
+                                gridCols={columns.length + 1}
+                                onChange={handleUpdateItem}
+                                tab={tab}
+                                index={index}
+                                errors={itemErrors}
+                            />
+                        );
+                    })
                 }
             </div>
 

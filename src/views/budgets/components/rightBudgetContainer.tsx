@@ -10,8 +10,10 @@ interface rightBudgetContainerProps {
 
 function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetContainerProps) {
   const [activeTab, setActiveTab] = useState('material');
-  type ValidationError = { index: number , item: any, errors: { field: string, message: string }[] };
-  const [errors, setErrors] = useState<ValidationError[]>([]);
+
+  type ValidationError = { index: number, item: any, errors: { field: string, message: string }[] };
+  const [errors, setErrors] = useState<{ [key: string]: ValidationError[] }>({});
+
 
   const handleNewItem = (key: string) => {
     const tab = tabsConfig.find(t => t.key === key);
@@ -64,6 +66,7 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
     const updateValidationBudgetItem = (updatedItem[key as keyof IWorkItem] as any[]).map((item, i) => {
     
       Object.keys(item).forEach(attr => {
+        console.log(attr)
         tab?.columns.forEach(col => {
   
           if (col.key === attr && col.validation) {
@@ -100,12 +103,15 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
 
     if (validationErrors.length > 0) {
       console.error('Errores de validación:', validationErrors);
-      setErrors(validationErrors);
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [key]: validationErrors, // Actualizamos los errores sólo para la pestaña activa
+      }));
       return;
     }
 
 
-    // console.log(updatedItem)
+    console.log(updatedItem)
   };
 
 
@@ -130,11 +136,11 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
       count: selectedItem.equipment.length,
       compute: (item: IEquipment) => item.quantity * item.depreciation * item.cost,
       columns: [
-        { key: 'code', label: 'Código', type: 'text' },
-        { key: 'description', label: 'Descripción', type: 'text', colSpan: 2 },
-        { key: 'quantity', label: 'Cantidad', type: 'number' },
-        { key: 'cost', label: 'Costo', type: 'number' },
-        { key: 'depreciation', label: 'Depreciación', type: 'number' },
+        { key: 'code', label: 'Código', type: 'text', validation: [{ required: true }] },
+        { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+        { key: 'quantity', label: 'Cantidad', type: 'number', validation: [{ required: true }] },
+        { key: 'cost', label: 'Costo', type: 'number', validation: [{ required: true }] },
+        { key: 'depreciation', label: 'Depreciación', type: 'number', validation: [{ required: true }] },
         {
           key: 'total',
           label: 'Total',
@@ -145,14 +151,14 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
     },
     {
       key: 'labor',
-      label: 'Mano de Obra',
+      label: 'Mano de Obra', 
       count: selectedItem.labor.length,
       compute: (item: ILabor) => item.quantity * item.hourly_cost,
       columns: [
-        { key: 'code', label: 'Código', type: 'text' },
-        { key: 'description', label: 'Descripción', type: 'text', colSpan: 2 },
-        { key: 'quantity', label: 'Cantidad', type: 'number' },
-        { key: 'hourly_cost', label: 'Costo por Hora', type: 'number' },
+        { key: 'code', label: 'Código', type: 'text', validation: [{ required: true }] },
+        { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+        { key: 'quantity', label: 'Cantidad', type: 'number', validation: [{ required: true }] },
+        { key: 'hourly_cost', label: 'Costo por Hora', type: 'number', validation: [{ required: true }] },
         {
           key: 'total',
           label: 'Total',
@@ -196,7 +202,7 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
             handleNewItem={handleNewItem}
             handleUpdateItem={handleUpdateItem}
             tab={tab.key}
-            errorsInWorkItem={errors}
+            errorsInWorkItem={errors[tab.key] || []}
           />
         )
       ))}
