@@ -34,6 +34,7 @@ export interface IMaterial {
     cost: number
     database: IDatabase
     quantity: number
+    total: number
 }
 
 export interface IUnit {
@@ -57,6 +58,7 @@ export interface IEquipment {
     depreciation: number
     database: IDatabase
     quantity: number
+    total: number
 }
 
 export interface ILabor {
@@ -66,4 +68,5 @@ export interface ILabor {
     hourly_cost: number
     database: IDatabase
     quantity: number
+    total: number
 }

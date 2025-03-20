@@ -17,9 +17,11 @@ interface Column {
 interface EditListItemProps {
   columns: Column[];
   gridCols?: number;
-  onChange?: (fieldName: string, value: any) => void;
+  onChange: (key: string, index: number, field: string, value: any) => void;
   item: any;
   className?: string;
+  tab: string;
+  index: number;
 }
 
 
@@ -27,13 +29,17 @@ const EditListItem: React.FC<EditListItemProps> = ({
   columns,
   gridCols = 6,
   item,
-  className
+  className,
+  onChange,
+  tab,
+  index
 }) => {
   const { data: units = [] } = useUnits();
   const baseFieldClass = 'bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700';
 
   return (
     <div
+      key={index}
       className={`grid gap-x-2 ${className}`}
       style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
     >
@@ -48,6 +54,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
               defaultValue={defaultSelectValue}
               className={`${baseFieldClass} ${col.className || ''}`}
               style={{ gridColumn: col.colSpan ? `span ${col.colSpan}` : undefined }}
+              onChange={(e) => onChange(tab, index, col.key, e.target.value)}
             >
               {defaultSelectValue ? (
                 <option value={item[col.key]?.id}>
@@ -68,14 +75,13 @@ const EditListItem: React.FC<EditListItemProps> = ({
             </select>
           );
         } else if (col.type === 'display') {
-            const rawValue = col.compute(item);
-            const computedValue = isNaN(rawValue) || rawValue === null ? 0 : rawValue;
+          const total = item.total ? item.total : col.compute(item)
           fieldElement = (
             <p
               className={`text-white p-2 font-bold ${col.className || ''}`}
               style={{ gridColumn: col.colSpan ? `span ${col.colSpan}` : undefined }}
             >
-              {computedValue}$
+              {total}$
             </p>
           );
         } else {
@@ -83,6 +89,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
           fieldElement = (
             <input
               type={col.type}
+              onChange={(e) => onChange(tab, index, col.key, e.target.value)}
               defaultValue={defaultValue}
               className={`${baseFieldClass} ${col.className || ''}`}
               placeholder={col.label}

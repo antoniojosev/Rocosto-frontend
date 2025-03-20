@@ -501,15 +501,15 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                 ...selectedItem,
                 material: selectedItem.material?.map(m => ({
                   ...m,
-                  quantity: m.quantity === null || m.quantity === undefined ? 1 : m.quantity
+                  quantity: m.quantity === null || m.quantity === undefined ? 1 : m.quantity,
                 })),
                 labor: selectedItem.labor?.map(l => ({
                   ...l,
-                  quantity: l.quantity === null || l.quantity === undefined ? 1 : l.quantity
+                  quantity: l.quantity === null || l.quantity === undefined ? 1 : l.quantity,
                 })),
                 equipment: selectedItem.equipment?.map(e => ({
                   ...e,
-                  quantity: e.quantity === null || e.quantity === undefined ? 1 : e.quantity
+                  quantity: e.quantity === null || e.quantity === undefined ? 1 : e.quantity,
                 }))
               }}
               setSelectedItem={setSelectedItem}

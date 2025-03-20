@@ -15,7 +15,6 @@ function App() {
   const [selectedBudget, setSelectedBudget] = useState<IBudget | null>(null);
 
   const handleBudgetClick = (budget : IBudget): void => {
-    console.log(budget)
     setSelectedBudget(budget);
     setCurrentView('budget-detail');
   };

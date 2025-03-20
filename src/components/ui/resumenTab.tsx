@@ -25,12 +25,7 @@ const TotalSummary: React.FC<TotalSummaryProps> = ({ workItem, type, compute }) 
                 items = [];
         }
         
-        const sum = items.map(item => {
-            return compute ? compute(item) : 0.0;
-        }).reduce((acc, curr) => acc + curr, 0);
-        items.map(item => {
-            console.log(item);
-        });
+        const sum = items.reduce((acc, item) => acc + (compute ? compute(item) : 0), 0);
         return sum;
     }
 

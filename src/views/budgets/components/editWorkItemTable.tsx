@@ -17,16 +17,18 @@ interface Column {
 }
 
 interface EditWorkItemTableProps {
-    selectedItem: IWorkItem
+    workItem: IWorkItem
     handleNewItem: (type: string) => void;
+    handleUpdateItem: (key: string, index: number, field: string, value: any) => void;
     columns : Column[];
     tab: 'material' | 'equipment' | 'labor';
 }
 
 const EditWorkItemTable: React.FC<EditWorkItemTableProps> = ({
-    selectedItem,
+    workItem,
     columns,
     handleNewItem,
+    handleUpdateItem,
     tab,
 }) => {
 
@@ -44,18 +46,21 @@ const EditWorkItemTable: React.FC<EditWorkItemTableProps> = ({
             />
 
             <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                {selectedItem[tab].map((material) => (
+                {workItem[tab].map((item, index) => (
                     <EditListItem
-                        key={material.id}
-                        item={{ ...material, quantity: 1 }}
+                        key={item.id}
+                        item={item}
                         columns={columns}
                         gridCols={columns.length + 1}
+                        onChange={handleUpdateItem}
+                        tab={tab}
+                        index={index}
                     />
                 ))}
             </div>
 
             <TotalSummary
-                workItem={selectedItem}
+                workItem={workItem}
                 type={tab}
                 compute={columns[columns.length - 1].compute}
             />
