@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createWorkItem, fetchDatabase, getUnits} from '../api/endpoints/databases';
-import { IDatabase, IWorkItem } from '../types/Database';
+import { IDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
 
 const useDatabase = () => {
   return useQuery<IDatabase[], Error, IDatabase[], readonly ['databases']>({
@@ -11,7 +11,7 @@ const useDatabase = () => {
 
 
 export const useCreateWorkItem = () => {
-  return useMutation<IWorkItem, Error, IWorkItem>({
+  return useMutation<IWorkItem, Error, IWorkItemCreate>({
     mutationFn: createWorkItem,
     onError: (error) => {
       console.error('Error al crear partida:', error);

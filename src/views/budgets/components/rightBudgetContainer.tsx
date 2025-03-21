@@ -110,9 +110,10 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
       return;
     }
 
-
     console.log(updatedItem)
   };
+
+
 
 
   const tabsConfig = [
