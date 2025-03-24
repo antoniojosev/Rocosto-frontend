@@ -13,6 +13,11 @@ export const createWorkItem = async (newBudget: IWorkItemCreate): Promise<IWorkI
   return response.data;
 };
 
+export const updateWorkItem = async (workItem: IWorkItemCreate): Promise<IWorkItem> => {
+  const response = await client.put<IWorkItem>(`/databases/work-items/${workItem.id}/`, workItem);
+  return response.data;
+};
+
 export const getUnits = async (): Promise<IUnit[]> => {
   const response = await client.get<IUnit[]>('/databases/units/');
   return response.data;

@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 
 interface HeaderProps {
-    setIsModalOpen: (isOpen: boolean) => void;
+    setIsModalOpen: () => void;
     title: string;
     subtitle: string;
     titleButton: string
@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, titleButton, setIsModa
                 <p className="text-gray-400">{subtitle}</p>
             </div>
             <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => setIsModalOpen()}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
             >
                 <Plus size={20} />

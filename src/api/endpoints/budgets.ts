@@ -4,6 +4,7 @@ import client from '../client';
 
 export const fetchBudget = async (): Promise<IBudget[]> => {
   const response = await client.get<IBudget[]>('/budgets');
+  console.log(response.data);
   return response.data;
 };
 

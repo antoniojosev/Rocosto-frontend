@@ -20,6 +20,7 @@ export interface IWorkItem {
 }
 
 export interface IWorkItemCreate {
+    id: string,
     material: IMaterial[]
     equipment: IEquipment[]
     labor: ILabor[]

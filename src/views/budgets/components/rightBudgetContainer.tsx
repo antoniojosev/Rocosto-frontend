@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IEquipment, ILabor, IMaterial, IWorkItem } from '../../../types/Database';
 import Header from './header';
 import EditWorkItemTable from './editWorkItemTable';
+import { useUpdateWorkItem } from '../../../hooks/useDatabases';
 
 interface rightBudgetContainerProps {
   selectedItem: IWorkItem;
@@ -10,6 +11,7 @@ interface rightBudgetContainerProps {
 
 function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetContainerProps) {
   const [activeTab, setActiveTab] = useState('material');
+  const mutation = useUpdateWorkItem();
 
   type ValidationError = { index: number, item: any, errors: { field: string, message: string }[] };
   const [errors, setErrors] = useState<{ [key: string]: ValidationError[] }>({});
@@ -113,7 +115,24 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
     console.log(updatedItem)
   };
 
-
+  const handleSaveChanges = (selectedItem : IWorkItem) => {
+    console.log('Guardando cambios antes:', selectedItem);
+    const itemToCreate = {
+      ...selectedItem,
+      material: selectedItem.material.map(item => ({ 
+      ...item, 
+      unit_id: item.unit?.id || item.unit 
+      })),
+    };
+    console.log('Guardando cambios ahora:', itemToCreate);
+    mutation.mutate(itemToCreate, {
+      onSuccess: (data) => {
+        console.log('response al update: ', data)
+        // onAdd(data)
+        // onClose()
+      }
+    });
+  };
 
 
   const tabsConfig = [
@@ -176,7 +195,7 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
         title={selectedItem.code}
         subtitle={selectedItem.description}
         titleButton="Guardar Cambios"
-        setIsModalOpen={() => { }}
+        setIsModalOpen={() => handleSaveChanges(selectedItem)}
       />
 
       <div className="flex gap-2 mb-6">
