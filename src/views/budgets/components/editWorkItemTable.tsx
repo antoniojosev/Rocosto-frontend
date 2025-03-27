@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IWorkItem } from '../../../types/Database';
 import { ActionTab } from '../../../components/ui/actionTab';
 import HeaderTable from '../../../components/ui/headerTable';
@@ -22,9 +22,12 @@ interface EditWorkItemTableProps {
     workItem: IWorkItem
     handleNewItem: (type: string) => void;
     handleUpdateItem: (key: string, index: number, field: string, value: any) => void;
+    handleDeleteItem: (key: string, index: number) => void;
     columns : Column[];
     tab: 'material' | 'equipment' | 'labor';
     errorsInWorkItem: ValidationError[];
+    editableInput: boolean;
+    setEditableInput: (editable: boolean) => void;
 }
 
 const EditWorkItemTable: React.FC<EditWorkItemTableProps> = ({
@@ -32,8 +35,11 @@ const EditWorkItemTable: React.FC<EditWorkItemTableProps> = ({
     columns,
     handleNewItem,
     handleUpdateItem,
+    handleDeleteItem,
     tab,
-    errorsInWorkItem
+    errorsInWorkItem,
+    editableInput,
+    setEditableInput
 }) => {
 
     return (
@@ -60,9 +66,12 @@ const EditWorkItemTable: React.FC<EditWorkItemTableProps> = ({
                                 columns={columns}
                                 gridCols={columns.length + 1}
                                 onChange={handleUpdateItem}
+                                onDelete={handleDeleteItem}
                                 tab={tab}
                                 index={index}
                                 errors={itemErrors}
+                                setEditableInput={setEditableInput}
+                                editableInput={editableInput}
                             />
                         );
                     })

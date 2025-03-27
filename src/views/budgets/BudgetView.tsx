@@ -12,7 +12,8 @@ import RightBudgetContainer from './components/rightBudgetContainer';
 
 interface BudgetViewProps {
   onBack: () => void;
-  budget: IBudget
+  budget: IBudget;
+  setSelectedBudget: (budget: IBudget) => void;
 }
 
 const mockItems = [
@@ -317,7 +318,7 @@ const mockItems = [
 ];
 
 
-const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
+const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget, setSelectedBudget }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [items, setItems] = useState<any[]>(mockItems);
   const [selectedItem, setSelectedItem] = useState<IWorkItem | null>(null);
@@ -413,6 +414,19 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
 
   const handleEditItem = (type: string, item: any) => {
     setEditingItem({ type, item });
+  };
+
+  const handleUpdateItem = (type: string, updatedItem: any) => {
+   
+      const budgetUpdated = {
+        ...budget,
+        work_item: budget.work_item.some(item => item.id === updatedItem.id)
+          ? budget.work_item.map(item => item.id === updatedItem.id ? updatedItem : item)
+          : [...budget.work_item, updatedItem]
+      };
+    setSelectedBudget(budgetUpdated);
+    setDetailBudget(budgetUpdated);
+    setEditingItem(null);
   };
 
   const handleUpdateQuantity = (e: React.ChangeEvent<HTMLInputElement>, type: string, item: any) => {
@@ -513,6 +527,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ onBack, budget }) => {
                 }))
               }}
               setSelectedItem={setSelectedItem}
+              handleUpdateItems={handleUpdateItem}
             />
           )}
         </div>

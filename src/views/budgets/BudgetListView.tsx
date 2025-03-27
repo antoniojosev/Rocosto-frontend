@@ -68,7 +68,7 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
 
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() =>  (false)}
+        onClose={() => setIsModalOpen(false)}
         onCreateBudget={onBudgetClick}
       />
     </div>

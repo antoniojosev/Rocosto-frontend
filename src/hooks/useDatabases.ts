@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createWorkItem, fetchDatabase, getUnits, updateWorkItem} from '../api/endpoints/databases';
+import { createWorkItem, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, getUnits, updateWorkItem} from '../api/endpoints/databases';
 import { IDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
 
 const useDatabase = () => {
@@ -28,7 +28,34 @@ export const useUpdateWorkItem = () => {
   });
 };
 
+export const useDeleteWorkItem = () => {
+  return useMutation<void, Error, string>({
+    mutationFn: deleteWorkItem,
+    onError: (error) => {
+      console.error('Error al eliminar partida:', error);
+    }
+  });
+};
 
+export const useDeleteItem = () => {
+  return useMutation<void, Error, { id: string, type: 'material' | 'labor' | 'equipment' }>({
+    mutationFn: ({ id, type }) => {
+      switch (type) {
+        case 'material':
+          return deleteMaterial(id);
+        case 'labor':
+          return deleteLabor(id);
+        case 'equipment':
+          return deleteEquipment(id);
+        default:
+          throw new Error('Tipo de item no soportado');
+      }
+    },
+    onError: (error) => {
+      console.error('Error al eliminar item:', error);
+    }
+  });
+};
 
 export const useUnits = () => { 
   return useQuery<IUnit[], Error, IUnit[], readonly ['units']>({

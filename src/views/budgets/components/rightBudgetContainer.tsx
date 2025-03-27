@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { IEquipment, ILabor, IMaterial, IWorkItem } from '../../../types/Database';
 import Header from './header';
 import EditWorkItemTable from './editWorkItemTable';
-import { useUpdateWorkItem } from '../../../hooks/useDatabases';
+import { useDeleteItem, useDeleteWorkItem, useUpdateWorkItem } from '../../../hooks/useDatabases';
 
 interface rightBudgetContainerProps {
   selectedItem: IWorkItem;
   setSelectedItem: (selecteItem: IWorkItem) => void;
+  handleUpdateItems: (key: string, item: any) => void;
 }
 
-function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetContainerProps) {
+function RightBudgetContainer({ selectedItem, setSelectedItem, handleUpdateItems }: rightBudgetContainerProps) {
   const [activeTab, setActiveTab] = useState('material');
+  const [editableInput, setEditableInput] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const mutation = useUpdateWorkItem();
+  const deleteItem = useDeleteItem();
 
   type ValidationError = { index: number, item: any, errors: { field: string, message: string }[] };
   const [errors, setErrors] = useState<{ [key: string]: ValidationError[] }>({});
@@ -116,22 +121,78 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
   };
 
   const handleSaveChanges = (selectedItem : IWorkItem) => {
-    console.log('Guardando cambios antes:', selectedItem);
-    const itemToCreate = {
-      ...selectedItem,
-      material: selectedItem.material.map(item => ({ 
-      ...item, 
-      unit_id: item.unit?.id || item.unit 
-      })),
-    };
-    console.log('Guardando cambios ahora:', itemToCreate);
-    mutation.mutate(itemToCreate, {
-      onSuccess: (data) => {
-        console.log('response al update: ', data)
-        // onAdd(data)
-        // onClose()
+    if(editableInput){
+
+      setIsSaving(true);
+      setEditableInput(false);
+      const startTime = Date.now();
+      
+      const itemToCreate = {
+        ...selectedItem,
+        material: selectedItem.material.map(item => ({ 
+          ...item, 
+          unit_id: item.unit?.id || item.unit 
+        })),
+      };
+  
+      mutation.mutate(itemToCreate, {
+        onSuccess: (data) => {
+          const elapsedTime = Date.now() - startTime;
+          const minimumTime = 1000; // 1 segundo
+  
+          if (elapsedTime < minimumTime) {
+            setTimeout(() => {
+              setIsSaving(false);
+              setEditableInput(false);
+              setSelectedItem(data);
+              handleUpdateItems('material', data);
+            }, minimumTime - elapsedTime);
+          } else {
+            setIsSaving(false);
+            setEditableInput(false);
+            setSelectedItem(data);
+            handleUpdateItems('material', data);
+          }
+        },
+        onError: () => {
+          const elapsedTime = Date.now() - startTime;
+          const minimumTime = 1000;
+  
+          if (elapsedTime < minimumTime) {
+            setTimeout(() => {
+              setIsSaving(false);
+            }, minimumTime - elapsedTime);
+          } else {
+            setIsSaving(false);
+          }
+        }
+      });
+    }
+  };
+
+  const handleDeleteItem = (key: string, index: number) => {
+    const itemToDelete = (selectedItem[key as keyof IWorkItem] as any[])[index];
+    const itemId = itemToDelete.id; // Get the id before deleting
+    console.log('Deleting item with id:', itemId);
+    deleteItem.mutate(
+      { id: itemId, type: key },
+      {
+        onSuccess: () => {
+          console.log('Item deleted successfully');
+        }
       }
-    });
+    );
+
+    const updatedItems = (selectedItem[key as keyof IWorkItem] as any[]).filter((_, i) => i !== index);
+    const newCategoryTotal = updatedItems.reduce((acc: number, item) => acc + (item.total || 0), 0);
+
+    const updatedItem = {
+      ...selectedItem,
+      [key]: updatedItems,
+      total: newCategoryTotal
+    };
+
+    setSelectedItem(updatedItem);
   };
 
 
@@ -189,13 +250,22 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
     }
   ]
 
+  const disableButtonStyle = 'text-white cursor-not-allowed bg-transparent';
+  const activeButtonStyle = 'bg-white text-black rounded-lg border-0 hover:bg-gray-200 transition-colors'
+
   return (
-    <div className="p-6">
+    <div className={`p-6 relative overflow-hidden ${isSaving ? 'loading-background pointer-events-none' : ''}`}>
+      {isSaving && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/20 to-transparent loading-animation" />
+      )}
       <Header
         title={selectedItem.code}
         subtitle={selectedItem.description}
         titleButton="Guardar Cambios"
         setIsModalOpen={() => handleSaveChanges(selectedItem)}
+        classNameButton={editableInput ? activeButtonStyle : disableButtonStyle}
+        isLoading={isSaving}
+        isSuccess={saveSuccess}
       />
 
       <div className="flex gap-2 mb-6">
@@ -221,15 +291,41 @@ function RightBudgetContainer({ selectedItem, setSelectedItem }: rightBudgetCont
             workItem={selectedItem}
             handleNewItem={handleNewItem}
             handleUpdateItem={handleUpdateItem}
+            handleDeleteItem={handleDeleteItem}
             tab={tab.key}
             errorsInWorkItem={errors[tab.key] || []}
+            editableInput={editableInput}
+            setEditableInput={setEditableInput}
           />
         )
       ))}
     </div>
-
-
   );
 }
+
+// Add this CSS at the end of the file
+const styles = `
+@keyframes loading {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.loading-animation {
+    animation: loading 1.5s infinite;
+}
+
+@keyframes progress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+.animate-progress {
+    animation: progress 1s ease-out forwards;
+}
+`;
+
+const styleSheet = document.createElement('style');
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default RightBudgetContainer;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trash } from 'lucide-react';
 import { useUnits } from '../../hooks/useDatabases';
+import { set } from 'react-hook-form';
 
 interface Column {
   type: string;
@@ -19,11 +20,15 @@ interface EditListItemProps {
   columns: Column[];
   gridCols?: number;
   onChange: (key: string, index: number, field: string, value: any) => void;
+  onDelete: (key: string, index: number) => void;
   item: any;
   className?: string;
   tab: string;
   index: number;
   errors: ValidationError | null;
+  editableInput: editableInput;
+  setEditableInput: (editable: boolean)=>void
+
 }
 
 
@@ -33,13 +38,25 @@ const EditListItem: React.FC<EditListItemProps> = ({
   item,
   className,
   onChange,
+  onDelete,
   tab,
   index,
-  errors
+  errors,
+  editableInput,
+  setEditableInput
 }) => {
   const { data: units = [] } = useUnits();
-  const baseFieldClass = 'bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700';
+  
+  const styleInputEditable = editableInput ? 'border' : 'border-0';
+
+  const baseFieldClass = `bg-[#2a2a2a] text-white rounded-md p-2 ${styleInputEditable} border-gray-700`;
   // TODO: corregir los estilos del error en el select 
+
+  const handlerOnChange = (e, col) =>{
+    onChange(tab, index, col.key, e.target.value)
+    setEditableInput(true)
+  }
+  
   return (
     <div
       key={index}
@@ -61,7 +78,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
               defaultValue={defaultSelectValue}
               className={`${baseFieldClass} ${col.className || ''} ${errorClass}`}
               style={{ gridColumn: col.colSpan ? `span ${col.colSpan}` : undefined }}
-              onChange={(e) => onChange(tab, index, col.key, e.target.value)}
+              onChange={(e) => handlerOnChange(e, col)}
             >
               {defaultSelectValue ? (
                 <option value={item[col.key]?.id}>
@@ -96,7 +113,8 @@ const EditListItem: React.FC<EditListItemProps> = ({
           fieldElement = (
             <input
               type={col.type}
-              onChange={(e) => onChange(tab, index, col.key, e.target.value)}
+              onChange={(e) => handlerOnChange(e, col)}
+              onFocus={()=> setEditableInput(true)}
               defaultValue={defaultValue}
               className={`${baseFieldClass} ${col.className || ''} ${errorClass}`}
               placeholder={errorPlaceHolder || col.label}
@@ -114,6 +132,7 @@ const EditListItem: React.FC<EditListItemProps> = ({
                 <button
                   type="button"
                   className="text-gray-400 hover:text-white ml-2"
+                  onClick={() => onDelete(tab, index)}
                 >
                   <Trash size={16} />
                 </button>

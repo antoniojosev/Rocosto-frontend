@@ -18,6 +18,22 @@ export const updateWorkItem = async (workItem: IWorkItemCreate): Promise<IWorkIt
   return response.data;
 };
 
+export const deleteWorkItem = async (id: string): Promise<void> => {
+  await client.delete(`/databases/work-items/${id}/`);
+};
+
+export const deleteMaterial = async (id: string): Promise<void> => {
+  await client.delete(`/databases/materials/${id}/`);
+};
+
+export const deleteLabor = async (id: string): Promise<void> => {
+  await client.delete(`/databases/labors/${id}/`);
+};
+
+export const deleteEquipment = async (id: string): Promise<void> => {
+  await client.delete(`/databases/equipments/${id}/`);
+};
+
 export const getUnits = async (): Promise<IUnit[]> => {
   const response = await client.get<IUnit[]>('/databases/units/');
   return response.data;

@@ -38,6 +38,7 @@ function App() {
             <BudgetView 
               onBack={() => setCurrentView('budget-list')}
               budget={selectedBudget} 
+              setSelectedBudget={setSelectedBudget}
             />
           )}
         </div>
