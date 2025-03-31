@@ -1,14 +1,21 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createWorkItem, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, getUnits, updateWorkItem} from '../api/endpoints/databases';
-import { IDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
+import { createWorkItem, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateWorkItem} from '../api/endpoints/databases';
+import { IPageDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
 
 const useDatabase = () => {
-  return useQuery<IDatabase[], Error, IDatabase[], readonly ['databases']>({
+  return useQuery<IPageDatabase[], Error, IPageDatabase[], readonly ['databases']>({
     queryKey: ['databases'] as const,
     queryFn: fetchDatabase,
   });
 };
 
+export const useDatabaseWithResource = (idDatabase: string, queryParams?: string) => {
+  return useQuery<IPageDatabase, Error, IPageDatabase, readonly ['database', string, string | undefined]>({
+    queryKey: ['database', idDatabase, queryParams] as const,
+    queryFn: () => fetchDatabaseWithResource(idDatabase, queryParams),
+    enabled: !!idDatabase, // Only fetch when there is an actual ID
+  });
+};
 
 export const useCreateWorkItem = () => {
   return useMutation<IWorkItem, Error, IWorkItemCreate>({

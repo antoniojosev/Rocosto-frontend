@@ -49,6 +49,7 @@ export interface IDatabase {
     code: string
     name: string
     description: string
+    resource: []
 }
 
 export interface IEquipment {
@@ -70,4 +71,22 @@ export interface ILabor {
     database: IDatabase
     quantity: number
     total: number
+}
+
+export interface IPageDatabase {
+    id: string
+    code: string
+    name: string
+    description: string
+    total_materials: number
+    total_equipment: number
+    total_labor: number
+    resources: Resources
+}
+  
+export interface Resources {
+    count: number
+    next: boolean
+    previous: boolean
+    results?: (IMaterial | IEquipment | ILabor)[] 
 }

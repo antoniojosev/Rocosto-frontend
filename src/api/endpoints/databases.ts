@@ -1,9 +1,15 @@
-import { IDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../../types/Database';
+import { IPageDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../../types/Database';
 import client from '../client';
 
 
-export const fetchDatabase = async (): Promise<IDatabase[]> => {
-  const response = await client.get<IDatabase[]>('/databases');
+export const fetchDatabase = async (): Promise<IPageDatabase[]> => {
+  const response = await client.get<IPageDatabase[]>('/databases');
+  return response.data;
+};
+export const fetchDatabaseWithResource = async (idDatabase: string, resource?: string): Promise<IPageDatabase> => {
+  const base = `/databases/${idDatabase}/`;
+  const url = resource ? `${base}?filter=${resource}` : base;
+  const response = await client.get<IPageDatabase>(url);
   return response.data;
 };
 

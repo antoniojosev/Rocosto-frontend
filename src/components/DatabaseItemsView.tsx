@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Plus, Copy, Search, ArrowUpDown } from 'lucide-react';
+import { IPageDatabase } from '../types/Database';
+import { useDatabaseWithResource } from '../hooks/useDatabases';
+import SearchBar from './Searcn';
+import ResourceTable from './ResourceTable';
 
 interface Database {
   id: string;
@@ -12,7 +16,7 @@ interface Database {
 }
 
 interface DatabaseItemsViewProps {
-  database: Database;
+  database: IPageDatabase;
   onBack: () => void;
 }
 
@@ -39,15 +43,68 @@ const mockItems: Item[] = [
 ];
 
 const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack }) => {
-  const [activeTab, setActiveTab] = useState('materials');
+  const [activeTab, setActiveTab] = useState('MAT');
   const [searchTerm, setSearchTerm] = useState('');
+  const [resourceType, setResourceType] = useState(activeTab);
+  const { data } = useDatabaseWithResource(database.id, resourceType );
+  
+  // Update resourceType when activeTab changes
+  React.useEffect(() => {
+    setResourceType(activeTab);
+  }, [activeTab]);
+  
+  // Function to handle custom resource type changes
+  const handleResourceTypeChange = (type: string) => {
+    setResourceType(type);
+  };
 
   const tabs = [
-    { id: 'materials', label: 'Materiales' },
-    { id: 'equipment', label: 'Equipos' },
-    { id: 'labor', label: 'Mano de Obra' },
-    { id: 'items', label: 'Partidas' },
+    { id: 'MAT', label: 'Materiales' },
+    { id: 'EQU', label: 'Equipos' },
+    { id: 'LAB', label: 'Mano de Obra' },
+    { id: 'WI', label: 'Partidas' },
   ];
+
+  const tabsConfig = [
+      {
+        key: 'MAT',
+        label: 'Materiales',
+        columns: [
+          { key: 'code', label: 'Código', type: 'text', colSpan: 1, validation: [{ required: true }] },
+          { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+          { key: 'unit', label: 'Unidad', type: 'select', colSpan: 1, validation: [{ required: true }] },
+          { key: 'cost', label: 'Costo', type: 'number', colSpan: 1, validation: [{ required: true }] },
+        ]
+      },
+      {
+        key: 'EQU',
+        label: 'Equipos',
+        columns: [
+          { key: 'code', label: 'Código', type: 'text', validation: [{ required: true }] },
+          { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+          { key: 'cost', label: 'Costo', type: 'number', validation: [{ required: true }] },
+          { key: 'depreciation', label: 'Depreciación', type: 'number', validation: [{ required: true }]},        ]
+      },
+      {
+        key: 'LAB',
+        label: 'Mano de Obra', 
+        columns: [
+          { key: 'code', label: 'Código', type: 'text', validation: [{ required: true }] },
+          { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+          { key: 'hourly_cost', label: 'Costo por Hora', type: 'number', validation: [{ required: true }] },
+        ]
+      },
+      {
+        key: 'WI',
+        label: 'Partidas',
+        columns: [
+          { key: 'code', label: 'Código', type: 'text', colSpan: 1, validation: [{ required: true }] },
+          { key: 'description', label: 'Descripción', type: 'text', colSpan: 2, validation: [{ required: true }] },
+          { key: 'unit', label: 'Unidad', type: 'select', colSpan: 1, validation: [{ required: true }] },
+          { key: 'total_cost', label: 'Total', type: 'number', colSpan: 1, validation: [{ required: true }] }
+        ]
+      }
+    ]
 
   return (
     <div className="p-6">
@@ -92,7 +149,7 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         ))}
       </div>
 
-      <div className="relative mb-6">
+      {/* <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
@@ -101,16 +158,23 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-[#2a2a2a] text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700 focus:outline-none focus:border-gray-600"
         />
-      </div>
+      </div> */}
+
+      <SearchBar onSearch={setSearchTerm}/>
 
       <div className="bg-[#1a1a1a] rounded-lg border border-gray-800">
-        <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
-          <div className="flex items-center gap-2">
-            Código <ArrowUpDown size={14} />
+        <ResourceTable 
+          config={tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0]} 
+          data={data?.resources?.results || []} 
+          searchTerm={searchTerm} 
+        />
+        {/* <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
+          <div className="flex items-c
           </div>
           <div className="flex items-center gap-2">
             Descripción <ArrowUpDown size={14} />
-          </div>
+          </div>enter gap-2">
+            Código <ArrowUpDown size={14} />
           <div className="flex items-center gap-2">
             Unidad <ArrowUpDown size={14} />
           </div>
@@ -120,7 +184,7 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         </div>
 
         <div className="divide-y divide-gray-800">
-          {mockItems
+          {(data?.resources?.results ?? [])
             .filter(item => 
               item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
               item.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -132,11 +196,11 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
               >
                 <div className="text-white">{item.code}</div>
                 <div className="text-white">{item.description}</div>
-                <div className="text-white">{item.unit}</div>
-                <div className="text-white">{item.cost?.toFixed(2)} US$</div>
+                <div className="text-white">{item.unit.name}</div>
+                <div className="text-white">{item.cost} US$</div>
               </div>
             ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );

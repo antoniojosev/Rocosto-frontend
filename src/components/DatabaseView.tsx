@@ -2,16 +2,9 @@ import React, { useState } from 'react';
 import { Plus, Search, ArrowUpDown } from 'lucide-react';
 import DatabaseModal from './DatabaseModal';
 import DatabaseItemsView from './DatabaseItemsView';
+import useDatabase from '../hooks/useDatabases';
+import { IDatabase, IPageDatabase } from '../types/Database';
 
-interface Database {
-  id: string;
-  name: string;
-  description: string;
-  materials: number;
-  equipment: number;
-  labor: number;
-  items: number;
-}
 
 const mockDatabases: Database[] = [
   {
@@ -28,7 +21,8 @@ const mockDatabases: Database[] = [
 const DatabaseView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDatabase, setSelectedDatabase] = useState<Database | null>(null);
+  const [selectedDatabase, setSelectedDatabase] = useState<IPageDatabase | null>(null);
+  const { data } = useDatabase()
 
   if (selectedDatabase) {
     return (
@@ -86,7 +80,7 @@ const DatabaseView: React.FC = () => {
         </div>
 
         <div className="divide-y divide-gray-800">
-          {mockDatabases
+          {(data ?? []) 
             .filter(db => db.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .map(database => (
               <div
@@ -98,10 +92,10 @@ const DatabaseView: React.FC = () => {
                   <div className="text-white font-medium">{database.name}</div>
                   <div className="text-gray-400 text-xs mt-1">{database.description}</div>
                 </div>
-                <div className="text-white">{database.materials}</div>
-                <div className="text-white">{database.equipment}</div>
-                <div className="text-white">{database.labor}</div>
-                <div className="text-white">{database.items}</div>
+                <div className="text-white">{database.total_materials}</div>
+                <div className="text-white">{database.total_equipment}</div>
+                <div className="text-white">{database.total_labor}</div>
+                <div className="text-white">{database.total_equipment + database.total_equipment + database.total_labor}</div>
               </div>
             ))}
         </div>
