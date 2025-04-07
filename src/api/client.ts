@@ -1,8 +1,9 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+const basePath = "https://construlink-backend-g6p7.onrender.com/api"
 
 // Configura el cliente Axios base
 const client = axios.create({
-  baseURL: 'https://construlink-backend-q7qd.onrender.com/api/v1',
+  baseURL: `${basePath}/v1`,
   headers: {
     'Accept': 'application/json',
     'Authorization': `Bearer ${import.meta.env.VITE_INITIAL_TOKEN || ''}`
@@ -25,7 +26,7 @@ const performLogin = async (): Promise<string> => {
     }
 
     const response = await axios.post(
-      `${client.defaults.baseURL}/auth/token/`,
+      `${basePath}/token/`,
       { username, password }
     );
 
