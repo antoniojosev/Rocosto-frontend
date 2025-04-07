@@ -16,9 +16,10 @@ interface SelectOwnerProps {
     onOwnerSelect: (owner: IOwner) => void;
     label: string;
     value?: string | null ;
+    className?: string;
 }
 
-export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value }: SelectOwnerProps) => {
+export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value, className }: SelectOwnerProps) => {
     const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false);
     const [ownerSearchTerm, setOwnerSearchTerm] = useState('');
 
@@ -37,7 +38,7 @@ export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value }: 
             <label className="block text-white mb-2">{label}</label>
             <div className="relative">
                 <div
-                    className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 cursor-pointer flex items-center"
+                    className={`w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 cursor-pointer flex items-center ${className || ''}`}
                     onClick={() => setIsOwnerDropdownOpen(!isOwnerDropdownOpen)}
                 >
                     {selectedOwner ? (

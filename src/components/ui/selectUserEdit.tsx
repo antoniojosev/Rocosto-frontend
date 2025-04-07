@@ -12,10 +12,11 @@ interface SelectUserEditProps {
     selectedUser?: IOwner | null;
     label: string;
     value: string | null;
+    className?: string;
 }
 
 
-export const SelectUserEdit = ({ systemUsers, data, onUserSelect, selectedUser, label }: SelectUserEditProps) => {
+export const SelectUserEdit = ({ systemUsers, data, onUserSelect, label, className, value }: SelectUserEditProps) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchFocus, setSearchFocus] = useState(false);
     const [hoveredUser, setHoveredUser] = useState<IOwner | null>(null);
@@ -26,28 +27,32 @@ export const SelectUserEdit = ({ systemUsers, data, onUserSelect, selectedUser, 
         setSearchTerm('');
     };
 
+    const userSelected = value 
+        ? data?.flatMap(company => company.owners)
+            .find(owner => owner.id === value) || null
+        : null;
     return (
         <div>
             <label className="block text-white mb-2">{label}</label>
             <div className="space-y-2">
-                {selectedUser ? (
-                    <div className="relative flex items-center gap-3 p-2 rounded-md bg-[#2a2a2a] border border-gray-700">
+                {userSelected ? (
+                    <div className={`relative flex items-center gap-3 p-2 rounded-md bg-[#2a2a2a] border border-gray-700`}>
                         <img
                             src={systemUsers[0].avatar}
-                            alt={selectedUser.username}
+                            alt={userSelected.username}
                             className="w-8 h-8 rounded-full object-cover"
                         />
                         <div className="flex-1">
-                            <div className="text-white text-sm">{selectedUser.username}</div>
+                            <div className="text-white text-sm">{userSelected.username}</div>
                             <div className="text-gray-400 text-xs">{systemUsers[0].role}</div>
                         </div>
                         <button
                             className="text-gray-400 hover:text-white transition-colors relative"
-                            onMouseEnter={() => setHoveredUser(selectedUser)}
+                            onMouseEnter={() => setHoveredUser(userSelected)}
                             onMouseLeave={() => setHoveredUser(null)}
                         >
                             <Info size={16} />
-                            {hoveredUser === selectedUser && <UserTooltip user={selectedUser} />}
+                            {hoveredUser === userSelected && <UserTooltip user={userSelected} />}
                         </button>
                         <button
                             onClick={() => onUserSelect(null)}
@@ -65,7 +70,7 @@ export const SelectUserEdit = ({ systemUsers, data, onUserSelect, selectedUser, 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onFocus={() => setSearchFocus(true)}
-                            className="w-full bg-[#2a2a2a] text-white rounded-md pl-8 pr-4 py-2 text-sm border border-gray-700"
+                            className={`w-full bg-[#2a2a2a] text-white rounded-md pl-8 pr-4 py-2 text-sm border border-gray-700 ${className || ''}`}
                         />
                     </div>
                 )}

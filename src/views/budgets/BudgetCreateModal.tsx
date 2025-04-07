@@ -20,6 +20,16 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
   const [activeTab, setActiveTab] = useState('general')
   const mutation = useCreateBudget();
 
+  // Lista de inputs del formulario para el trigger
+  const tabGeneral = [
+    'company_id', // Empresa
+    'code',       // Código
+    'name',       // Nombres
+    'owner_id',   // Propietario
+    'calculated_by_id', // Calculado por
+    'reviewed_by_id'    // Revisado por
+  ] as const;
+
   const tabs = [
     { id: 'general', label: 'General', completed: true },
     { id: 'costos', label: 'Costos', completed: activeTab === 'costos' || activeTab === 'impuestos' || activeTab === 'otros' },
@@ -38,7 +48,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
         onCreateBudget(data);
       }
     });
-  };
+  };        
 
   const methods = useForm<IBudgetCreate>({
     defaultValues: {
@@ -46,7 +56,21 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
       code: '',
       name: '',
     },
+    mode: 'onChange', // Valida los campos al cambiar su valor
+    reValidateMode: 'onChange', // Revalida los campos al cambiar su valor
   });
+
+  const { trigger } = methods;
+
+  const handleNext = async () => {
+    const isValid = await trigger(tabGeneral);
+    if (isValid) {
+      const currentIndex = tabs.findIndex(t => t.id === activeTab);
+      if (currentIndex < tabs.length - 1) {
+        setActiveTab(tabs[currentIndex + 1].id);
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -70,7 +94,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
               />
 
               {/* Scrollable content */}
-              <div className="overflow-y-auto max-h-[calc(90vh-16rem)] pr-2 custom-scrollbar">
+              <div className="overflow-y-auto max-h-[calc(90vh-16rem)] min-h-[calc(40vh)] pr-2 custom-scrollbar">
                 {activeTab === 'general' && (
                   <GeneralTab />
                 )}
@@ -88,9 +112,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
                 )}
               </div>
 
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-800">
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-800 mb-4">
                 <div className="flex items-center gap-2 text-gray-400">
-                  <div className={`w-2 h-2 rounded-full ${activeTab === 'general' ? 'bg-orange-500' : 'bg-gray-600'}`} />
+                  <div className={`w-2 h-2 rounded-full bg-orange-500`} />
                   <span className="text-sm">Paso {tabs.findIndex(t => t.id === activeTab) + 1} de 4</span>
                 </div>
               </div>
@@ -116,10 +140,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
                     id='btn-tab'
                     onClick={(e) => {
                       e.preventDefault();
-                      const currentIndex = tabs.findIndex(t => t.id === activeTab);
-                      if (currentIndex < tabs.length - 1) {
-                        setActiveTab(tabs[currentIndex + 1].id);
-                      }
+                      handleNext();
                     }}
                     className="px-4 py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors"
                   >
