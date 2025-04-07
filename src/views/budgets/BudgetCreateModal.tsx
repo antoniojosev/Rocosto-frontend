@@ -30,6 +30,23 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
     'reviewed_by_id'    // Revisado por
   ] as const;
 
+  const tabCostos = [
+    'direct_labor_factor', // Factor de labor directa
+    'administration_percentage', // % Administración
+    'utility_percentage', // % Utilidad
+    'financing_percentage' // % Financiamiento
+  ] as const;
+
+  const tabTaxes = [
+    'iva_type', // Tipo de IVA
+    'iva_percentage' // Porcentaje de IVA
+  ] as const;
+
+  const tabOthers = [
+    'use_medical_insurance', // Usar Gastos Médicos e Implementos de Seguridad
+    'use_associated_cost_factor' // Aplicar doble factor de costo asociado
+  ] as const;
+
   const tabs = [
     { id: 'general', label: 'General', completed: true },
     { id: 'costos', label: 'Costos', completed: activeTab === 'costos' || activeTab === 'impuestos' || activeTab === 'otros' },
@@ -37,8 +54,29 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
     { id: 'otros', label: 'Otros', completed: activeTab === 'otros' }
   ];
 
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
+  // Función para validar campos según la pestaña activa
+  const validateTabFields = async (tabId: string): Promise<boolean> => {
+    let isValid = false;
+
+    if (tabId === 'general') {
+      isValid = await trigger(tabGeneral);
+    } else if (tabId === 'costos') {
+      isValid = await trigger(tabCostos);
+    } else if (tabId === 'impuestos') {
+      isValid = await trigger(tabTaxes);
+    } else if (tabId === 'otros') {
+      isValid = await trigger(tabOthers);
+    }
+
+    return isValid;
+  };
+
+  const handleTabChange = async (tabId: string) => {
+    // Validamos la pestaña actual antes de cambiar
+    const isValid = await validateTabFields(activeTab);
+    if (isValid || tabId === activeTab) {
+      setActiveTab(tabId);
+    }
   };
 
   const onSubmit: SubmitHandler<IBudgetCreate> = budgetData => {
@@ -63,7 +101,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onCreateBudget }) => {
   const { trigger } = methods;
 
   const handleNext = async () => {
-    const isValid = await trigger(tabGeneral);
+    const isValid = await validateTabFields(activeTab);
+
     if (isValid) {
       const currentIndex = tabs.findIndex(t => t.id === activeTab);
       if (currentIndex < tabs.length - 1) {

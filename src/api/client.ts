@@ -1,8 +1,18 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 
 // Configura el cliente Axios base
+const isDebug = import.meta.env.VITE_DEBUG === 'true';
+
+const basePath = isDebug 
+? import.meta.env.VITE_DEBUG_API_BASE_URL
+: import.meta.env.VITE_PROD_API_BASE_URL;
+
+const baseURL = isDebug
+? import.meta.env.VITE_DEBUG_API_BASE 
+: import.meta.env.VITE_PROD_API_BASE;
+
 const client = axios.create({
-  baseURL: 'https://construlink-backend-q7qd.onrender.com/api/v1',
+  baseURL,
   headers: {
     'Accept': 'application/json',
     'Authorization': `Bearer ${import.meta.env.VITE_INITIAL_TOKEN || ''}`
@@ -25,7 +35,7 @@ const performLogin = async (): Promise<string> => {
     }
 
     const response = await axios.post(
-      `${client.defaults.baseURL}/auth/token/`,
+      `${basePath}/token/`,
       { username, password }
     );
 
