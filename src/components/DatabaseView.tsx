@@ -1,28 +1,92 @@
 import React, { useState } from 'react';
-import { Plus, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUpDown, Pencil, Trash, AlertCircle } from 'lucide-react';
 import DatabaseModal from './DatabaseModal';
 import DatabaseItemsView from './DatabaseItemsView';
-import useDatabase from '../hooks/useDatabases';
-import { IDatabase, IPageDatabase } from '../types/Database';
+import useDatabase, { useDeleteDatabase } from '../hooks/useDatabases';
+import { IPageDatabase } from '../types/Database';
+import { useNotification } from '../context/NotificationContext';
 
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  databaseName: string;
+}
 
-const mockDatabases: Database[] = [
-  {
-    id: '1',
-    name: 'Base de Datos General',
-    description: 'Base de datos principal con todos los items estándar',
-    materials: 150,
-    equipment: 75,
-    labor: 50,
-    items: 100,
-  },
-];
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, onClose, onConfirm, databaseName }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#1a1a1a] rounded-lg p-6 max-w-md w-full border border-gray-800">
+        <div className="flex items-center gap-3 mb-4">
+          <AlertCircle className="text-red-500" size={24} />
+          <h3 className="text-lg font-medium text-white">Confirmar eliminación</h3>
+        </div>
+        <p className="mb-6 text-gray-300">
+          ¿Está seguro que desea eliminar la base de datos <span className="font-medium text-white">{databaseName}</span>? Esta acción no se puede deshacer.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button 
+            className="px-4 py-2 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 transition-colors"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button 
+            className="px-4 py-2 bg-red-500 rounded-md text-white hover:bg-red-600 transition-colors"
+            onClick={onConfirm}
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DatabaseView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDatabase, setSelectedDatabase] = useState<IPageDatabase | null>(null);
-  const { data } = useDatabase()
+  const [editDatabase, setEditDatabase] = useState<IPageDatabase | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [databaseToDelete, setDatabaseToDelete] = useState<{id: string, name: string} | null>(null);
+  const { data } = useDatabase();
+  const deleteDatabase = useDeleteDatabase();
+  const { addNotification } = useNotification();
+
+  const handleEdit = (e: React.MouseEvent, database: IPageDatabase) => {
+    e.stopPropagation();
+    setEditDatabase(database);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (e: React.MouseEvent, database: IPageDatabase) => {
+    e.stopPropagation();
+    setDatabaseToDelete({id: database.id, name: database.name});
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!databaseToDelete) return;
+    
+    try {
+      await deleteDatabase.mutateAsync(databaseToDelete.id);
+      addNotification('success', 'Base de datos eliminada correctamente');
+    } catch (error) {
+      console.error('Error al eliminar la base de datos:', error);
+      addNotification('error', 'Error al eliminar la base de datos');
+    }
+    
+    setIsDeleteDialogOpen(false);
+    setDatabaseToDelete(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditDatabase(null);
+  };
 
   if (selectedDatabase) {
     return (
@@ -56,12 +120,12 @@ const DatabaseView: React.FC = () => {
           placeholder="Filtrar por nombre..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-[#2a2a2a] text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700 focus:outline-none focus:border-gray-600"
+          className="w-full bg-[#2a2a2a] text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700"
         />
       </div>
 
-      <div className="bg-[#1a1a1a] rounded-lg border border-gray-800">
-        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
+      <div className="bg-[#2a2a2a] rounded-lg">
+        <div className="grid grid-cols-7 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
           <div className="col-span-2 flex items-center gap-2">
             Nombre <ArrowUpDown size={14} />
           </div>
@@ -77,6 +141,7 @@ const DatabaseView: React.FC = () => {
           <div className="flex items-center gap-2">
             Partidas <ArrowUpDown size={14} />
           </div>
+          <div className="text-center">Acciones</div>
         </div>
 
         <div className="divide-y divide-gray-800">
@@ -85,7 +150,7 @@ const DatabaseView: React.FC = () => {
             .map(database => (
               <div
                 key={database.id}
-                className="grid grid-cols-6 gap-4 p-4 text-sm hover:bg-[#2a2a2a] cursor-pointer transition-colors"
+                className="grid grid-cols-7 gap-4 p-4 text-sm hover:bg-[#3a3a3a] cursor-pointer transition-colors"
                 onClick={() => setSelectedDatabase(database)}
               >
                 <div className="col-span-2">
@@ -95,13 +160,39 @@ const DatabaseView: React.FC = () => {
                 <div className="text-white">{database.total_materials}</div>
                 <div className="text-white">{database.total_equipment}</div>
                 <div className="text-white">{database.total_labor}</div>
-                <div className="text-white">{database.total_equipment + database.total_equipment + database.total_labor}</div>
+                <div className="text-white">{database.total_equipment + database.total_materials + database.total_labor}</div>
+                <div className="flex justify-center items-center gap-2">
+                  <button 
+                    onClick={(e) => handleEdit(e, database)}
+                    className="p-1.5 bg-blue-500/20 text-blue-400 rounded-md hover:bg-blue-500/30 transition-colors"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button 
+                    onClick={(e) => handleDelete(e, database)}
+                    className="p-1.5 bg-red-500/20 text-red-400 rounded-md hover:bg-red-500/30 transition-colors"
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
               </div>
             ))}
         </div>
       </div>
 
-      <DatabaseModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <DatabaseModal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal} 
+        database={editDatabase || undefined}
+        isEditMode={!!editDatabase}
+      />
+
+      <ConfirmDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+        databaseName={databaseToDelete?.name || ''}
+      />
     </div>
   );
 };

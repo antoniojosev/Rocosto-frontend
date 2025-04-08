@@ -83,6 +83,23 @@ export interface IPageDatabase {
     total_labor: number
     resources: Resources
 }
+
+export interface ICreateDatabase {
+    id: string
+    code: string
+    name: string
+    description: string
+}
+export interface IPageDatabase {
+    id: string
+    code: string
+    name: string
+    description: string
+    total_materials: number
+    total_equipment: number
+    total_labor: number
+    resources: Resources
+}
   
 export interface Resources {
     count: number

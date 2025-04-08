@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createWorkItem, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateWorkItem} from '../api/endpoints/databases';
-import { IPageDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
+import { createDatabase, createWorkItem, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem} from '../api/endpoints/databases';
+import { ICreateDatabase, IPageDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
 import { useNotification } from '../context/NotificationContext';
 import { useErrorHandler } from './useErrorHandler';
 
@@ -25,6 +25,57 @@ export const useDatabaseWithResource = (idDatabase: string, queryParams?: string
     enabled: !!idDatabase, // Only fetch when there is an actual ID
     onError: (error) => {
       handleError(error, `Error al cargar la base de datos con recursos`);
+    }
+  });
+};
+
+export const useCreateDatabase = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IPageDatabase, Error, ICreateDatabase>({
+    mutationFn: createDatabase,
+    onSuccess: () => {
+      addNotification('success', 'Base de datos creada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['databases'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al crear base de datos');
+    }
+  });
+};
+
+export const useUpdateDatabase = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IPageDatabase, Error, { id: string, database: ICreateDatabase }>({
+    mutationFn: ({ id, database }) => updateDatabase(id, database),
+    onSuccess: () => {
+      addNotification('success', 'Base de datos actualizada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['databases'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al actualizar base de datos');
+    }
+  });
+};
+
+export const useDeleteDatabase = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<void, Error, string>({
+    mutationFn: deleteDatabase,
+    onSuccess: () => {
+      addNotification('success', 'Base de datos eliminada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['databases'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al eliminar base de datos');
     }
   });
 };
