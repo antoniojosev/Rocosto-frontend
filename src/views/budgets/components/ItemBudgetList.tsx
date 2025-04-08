@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IBudget, StateChoices, StateInfo } from '../../../types/Budget';
-import { Pencil, Trash } from 'lucide-react';
+import { Pencil, Trash, AlertCircle } from 'lucide-react';
 import Modal from '../BudgetCreateModal';
 import { useDeleteBudget } from '../../../hooks/useBudget';
 
@@ -24,8 +24,48 @@ interface ItemBudgetListProps {
     handleBudgetClick: (budget: IBudget) => void;
 }
 
+interface ConfirmDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    budgetName: string;
+}
+
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, onClose, onConfirm, budgetName }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#1a1a1a] rounded-lg p-6 max-w-md w-full border border-gray-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <AlertCircle className="text-red-500" size={24} />
+                    <h3 className="text-lg font-medium text-white">Confirmar eliminación</h3>
+                </div>
+                <p className="mb-6 text-gray-300">
+                    ¿Está seguro que desea eliminar el presupuesto <span className="font-medium text-white">{budgetName}</span>? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex justify-end gap-3">
+                    <button 
+                        className="px-4 py-2 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 transition-colors"
+                        onClick={onClose}
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        className="px-4 py-2 bg-red-500 rounded-md text-white hover:bg-red-600 transition-colors"
+                        onClick={onConfirm}
+                    >
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ItemBudget: React.FC<ItemBudgetListProps> = ({ budget, handleBudgetClick }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const { mutate: deleteBudget } = useDeleteBudget();
 
     const handleEdit = (e: React.MouseEvent, id: string) => {
@@ -35,10 +75,14 @@ const ItemBudget: React.FC<ItemBudgetListProps> = ({ budget, handleBudgetClick }
         setIsEditModalOpen(true);
     };
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
+    const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
-        console.log(`Deleting budget with ID: ${id}`);
-        deleteBudget(id);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        deleteBudget(budget.id);
+        setIsDeleteDialogOpen(false);
     };
 
     const handleEditComplete = (updatedBudget: IBudget) => {
@@ -72,7 +116,7 @@ const ItemBudget: React.FC<ItemBudgetListProps> = ({ budget, handleBudgetClick }
                         <Pencil size={16} />
                     </button>
                     <button 
-                        onClick={(e) => handleDelete(e, budget.id)}
+                        onClick={(e) => handleDelete(e)}
                         className="p-1.5 bg-red-500/20 text-red-400 rounded-md hover:bg-red-500/30 transition-colors"
                     >
                         <Trash size={16} />
@@ -86,6 +130,13 @@ const ItemBudget: React.FC<ItemBudgetListProps> = ({ budget, handleBudgetClick }
                 onCreateBudget={handleEditComplete}
                 budget={budget}
                 isEditMode={true}
+            />
+
+            <ConfirmDialog 
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                onConfirm={confirmDelete}
+                budgetName={budget.name}
             />
         </>
     );
