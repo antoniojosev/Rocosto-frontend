@@ -15,7 +15,7 @@ interface SelectOwnerProps {
     systemUsers: SystemUser[];
     onOwnerSelect: (owner: IOwner) => void;
     label: string;
-    value?: string | null ;
+    value?: IOwner | null | string | number;
     className?: string;
 }
 
@@ -30,8 +30,8 @@ export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value, cl
     
     // TODO: evaluar alternativa a esto
     const selectedOwner = value 
-    ? data?.flatMap(company => company.owners).find(owner => owner.id === value) 
-    : null;
+        ? data?.flatMap(company => company.owners).find(owner => owner.id === value.id) 
+        : null;
 
     return (
         <div className="relative">

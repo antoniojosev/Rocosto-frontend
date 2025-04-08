@@ -80,27 +80,17 @@ const GeneralTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Select
-            label="Empresa"
-            options={data ?? []}
-            {...register('company_id', { required: 'La empresa es obligatoria' })}
-            className={`${baseFieldClass} ${errors.company_id ? 'border-red-500 placeholder-red-500' : ''}`}
-          />
-          {errors.company_id && (
-            <p className="text-red-500 text-sm mt-1">{errors.company_id.message}</p>
-          )}
-        </div>
-        <div>
-          <Input
-            label="Codigo"
-            {...register('code', { required: 'El código es obligatorio' })}
-            className={`${baseFieldClass} ${errors.code ? 'border-red-500 placeholder-red-500' : ''}`}
-          />
-          {errors.code && (
-            <p className="text-red-500 text-sm mt-1">{errors.code.message}</p>
-          )}
-        </div>
+        <Select
+          label="Empresa"
+          options={data ?? []}
+          {...register('company_id', { required: 'La empresa es obligatoria' })}
+          className={`${baseFieldClass} ${errors.company_id ? 'border-red-500 placeholder-red-500' : ''}`}
+        />
+        <Input
+          label="Codigo"
+          {...register('code', { required: 'El código es obligatorio' })}
+          className={`${baseFieldClass} ${errors.code ? 'border-red-500 placeholder-red-500' : ''}`}
+        />
       </div>
       <div>
         <Input
@@ -108,75 +98,57 @@ const GeneralTab: React.FC = () => {
           {...register('name', { required: 'El nombre es obligatorio' })}
           className={`${baseFieldClass} ${errors.name ? 'border-red-500 placeholder-red-500' : ''}`}
         />
-        {errors.name && (
-          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-        )}
       </div>
-      <div>
+      <Controller
+        name="owner_id"
+        control={control}
+        rules={{ required: 'El propietario es obligatorio' }}
+        render={({ field: { onChange, value } }) => (
+          <SelectOwner
+            onOwnerSelect={(owner: IOwner) => onChange(owner)}
+            data={data}
+            systemUsers={systemUsers}
+            label="Propietario"
+            value={value}
+            className={`${baseFieldClass} ${errors.owner_id ? 'border-red-500 placeholder-red-500' : ''}`}
+          />
+        )}
+      />
+      <div className="grid grid-cols-2 gap-4">
         <Controller
-          name="owner_id"
+          name="calculated_by_id"
           control={control}
-          rules={{ required: 'El propietario es obligatorio' }}
+          rules={{ required: 'El campo Calculado por es obligatorio' }}
           render={({ field: { onChange, value } }) => (
-            <SelectOwner
-              onOwnerSelect={(owner: IOwner) => onChange(owner.id)}
-              data={data}
+            <SelectUserEdit
+              label="Calculado por"
+              onUserSelect={(owner: IOwner | null) => {
+                onChange(owner);
+              }}
               systemUsers={systemUsers}
-              label="Propietario"
+              data={data}
               value={value}
-              className={`${baseFieldClass} ${errors.owner_id ? 'border-red-500 placeholder-red-500' : ''}`}
+              className={`${baseFieldClass} ${errors.calculated_by_id ? 'border-red-500 placeholder-red-500' : ''}`}
             />
           )}
         />
-        {errors.owner_id && (
-          <p className="text-red-500 text-sm mt-1">{errors.owner_id.message}</p>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Controller
-            name="calculated_by_id"
-            control={control}
-            rules={{ required: 'El campo Calculado por es obligatorio' }}
-            render={({ field: { onChange, value } }) => (
-              <SelectUserEdit
-                label="Calculado por"
-                onUserSelect={(owner: IOwner) => {
-                  onChange(owner.id);
-                }}
-                systemUsers={systemUsers}
-                data={data}
-                value={value}
-                className={`${baseFieldClass} ${errors.calculated_by_id ? 'border-red-500 placeholder-red-500' : ''}`}
-              />
-            )}
-          />
-          {errors.calculated_by_id && (
-            <p className="text-red-500 text-sm mt-1">{errors.calculated_by_id.message}</p>
+        <Controller
+          name="reviewed_by_id"
+          control={control}
+          rules={{ required: 'El campo Revisado por es obligatorio' }}
+          render={({ field: { onChange, value } }) => (
+            <SelectUserEdit
+              label="Revisado por"
+              onUserSelect={(owner: IOwner | null) => {
+                onChange(owner);
+              }}
+              systemUsers={systemUsers}
+              data={data}
+              value={value}
+              className={`${baseFieldClass} ${errors.reviewed_by_id ? 'border-red-500 placeholder-red-500' : ''}`}
+            />
           )}
-        </div>
-        <div>
-          <Controller
-            name="reviewed_by_id"
-            control={control}
-            rules={{ required: 'El campo Revisado por es obligatorio' }}
-            render={({ field: { onChange, value } }) => (
-              <SelectUserEdit
-                label="Revisado por"
-                onUserSelect={(owner: IOwner) => {
-                  onChange(owner.id);
-                }}
-                systemUsers={systemUsers}
-                data={data}
-                value={value}
-                className={`${baseFieldClass} ${errors.reviewed_by_id ? 'border-red-500 placeholder-red-500' : ''}`}
-              />
-            )}
-          />
-          {errors.reviewed_by_id && (
-            <p className="text-red-500 text-sm mt-1">{errors.reviewed_by_id.message}</p>
-          )}
-        </div>
+        />
       </div>
     </div>
   );

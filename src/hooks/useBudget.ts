@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchBudget, createBudget, getBudgetById } from '../api/endpoints/budgets';
-import { IBudget, IBudgetCreate } from '../types/Budget';
+import { fetchBudget, createBudget, getBudgetById, deleteBudget, updateBudget } from '../api/endpoints/budgets';
+import { IBudget, IBudgetCreate, IBudgetUpdate } from '../types/Budget';
 import { useNotification } from '../context/NotificationContext';
 import { useErrorHandler } from './useErrorHandler';
 
@@ -41,6 +41,44 @@ export const useBudgetById = (id: string) => {
     queryFn: () => getBudgetById(id),
     onError: (error) => {
       handleError(error, `Error al cargar el presupuesto con ID ${id}`);
+    }
+  });
+};
+
+export const useUpdateBudget = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    IBudget, 
+    Error, 
+    { id: string; budget: IBudgetUpdate }
+  >({
+    mutationFn: updateBudget,
+    onSuccess: () => {
+      addNotification('success', 'Presupuesto actualizado exitosamente');
+      queryClient.invalidateQueries({ queryKey: ['Budgets'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al actualizar el presupuesto');
+    }
+  });
+};
+
+export const useDeleteBudget = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<void, Error, string>({
+    mutationFn: deleteBudget,
+    onSuccess: () => {
+      addNotification('success', 'Presupuesto eliminado exitosamente');
+      queryClient.invalidateQueries({ queryKey: ['Budgets'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al eliminar el presupuesto');
     }
   });
 };

@@ -1,8 +1,11 @@
 import { Company } from "./Company";
 import { IWorkItem } from "./Database";
 
-
-export type StateChoices = 'IN_PROGRESS' | 'PENDING' | 'FINISHED';
+export enum StateChoices {
+  IN_PROGRESS = 'IN_PROGRESS',
+  PENDING = 'PENDING',
+  FINISHED = 'FINISHED',
+}
 
 export interface StateInfo {
     text: string;

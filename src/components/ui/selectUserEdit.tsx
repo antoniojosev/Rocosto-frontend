@@ -8,10 +8,10 @@ import UserTooltip from '../../views/budgets/components/userToolTip';
 interface SelectUserEditProps {
     systemUsers: any;
     data?: ICompany[];
-    onUserSelect: (user: IOwner) => void;
+    onUserSelect: (user: IOwner | null) => void;
     selectedUser?: IOwner | null;
     label: string;
-    value: string | null;
+    value: IOwner | null | string | number;
     className?: string;
 }
 
@@ -27,9 +27,12 @@ export const SelectUserEdit = ({ systemUsers, data, onUserSelect, label, classNa
         setSearchTerm('');
     };
 
+    // Determinar el usuario seleccionado basado en el valor (que puede ser un ID o un objeto)
     const userSelected = value 
-        ? data?.flatMap(company => company.owners)
-            .find(owner => owner.id === value) || null
+        ? typeof value === 'object' && value !== null
+          ? value 
+          : data?.flatMap(company => company.owners)
+              .find(owner => owner.id === value) || null
         : null;
     return (
         <div>
