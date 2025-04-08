@@ -9,6 +9,11 @@ interface ApiError {
   detail?: string;
 }
 
+// Opciones para el manejador de errores
+interface ErrorHandlerOptions {
+  showNotification?: boolean;
+}
+
 /**
  * Hook personalizado para manejar errores de la API y mostrar notificaciones
  */
@@ -16,11 +21,23 @@ export function useErrorHandler() {
   const { addNotification } = useNotification();
 
   /**
-   * Procesa un error y muestra una notificación con un mensaje personalizado
+   * Procesa un error y opcionalmente muestra una notificación con un mensaje personalizado
    * @param error El error capturado
    * @param defaultMessage Mensaje predeterminado si no se puede extraer del error
+   * @param options Opciones de configuración para el manejador de errores
+   * @returns El objeto de error procesado o undefined
    */
-  const handleError = (error: unknown, defaultMessage: string = "Ha ocurrido un error") => {
+  const handleError = (
+    error: unknown, 
+    defaultMessage: string = "Ha ocurrido un error", 
+    options: ErrorHandlerOptions = { showNotification: true }
+  ) => {
+    // Desestructuramos las opciones con valores por defecto
+    const { showNotification = true } = options;
+    
+    // Variable para almacenar el mensaje de error procesado
+    let processedError: string | undefined = undefined;
+    
     // Por defecto asumimos que estamos manejando un AxiosError
     if (error instanceof Error) {
       const axiosError = error as AxiosError<ApiError>;
@@ -62,25 +79,46 @@ export function useErrorHandler() {
             }).join('<br/>');
 
             errorObject = errorItems;
-            // Anteriormente usaba JSON.stringify pero no formateaba bien
         }
         
         if (errorObject) {
-          addNotification('error', errorObject);
-          return;
+          processedError = errorObject;
+          
+          // Solo mostrar notificación si se solicita explícitamente
+          if (showNotification) {
+            addNotification('error', errorObject);
+          }
+          
+          // Devolvemos el objeto de error para uso posterior
+          return { error: data, message: processedError };
         }
       }
       
       // Si tenemos un código de estado, incluirlo en el mensaje
       if (axiosError.response?.status) {
         const statusCode = axiosError.response.status;
-        addNotification('error', `Error ${statusCode}: ${defaultMessage}`);
-        return;
+        processedError = `Error ${statusCode}: ${defaultMessage}`;
+        
+        if (showNotification) {
+          addNotification('error', processedError);
+        }
+        
+        return { 
+          error: axiosError.response.data, 
+          message: processedError,
+          status: statusCode 
+        };
       }
     }
     
-    // Si todo lo demás falla, mostramos el mensaje predeterminado
-    addNotification('error', defaultMessage);
+    // Si todo lo demás falla, usamos el mensaje predeterminado
+    processedError = defaultMessage;
+    
+    if (showNotification) {
+      addNotification('error', processedError);
+    }
+    
+    return { message: processedError };
   };
 
   return { handleError };
