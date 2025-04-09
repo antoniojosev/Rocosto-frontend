@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createDatabase, createWorkItem, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem} from '../api/endpoints/databases';
-import { ICreateDatabase, IPageDatabase, IUnit, IWorkItem, IWorkItemCreate } from '../types/Database';
+import { createDatabase, createWorkItem, createWorkItemFromDatabase, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem, createMaterial, createEquipment, createLabor } from '../api/endpoints/databases';
+import { ICreateDatabase, IPageDatabase, IUnit, IWorkItem, IWorkItemCreate, IWorkItemDatabaseCreate, IMaterial, IEquipment, ILabor } from '../types/Database';
 import { useNotification } from '../context/NotificationContext';
 import { useErrorHandler } from './useErrorHandler';
 
@@ -127,6 +127,74 @@ export const useDeleteWorkItem = () => {
     },
     onError: (error) => {
       handleError(error, 'Error al eliminar partida');
+    }
+  });
+};
+
+export const useCreateWorkItemFromDatabase = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IWorkItem, Error, IWorkItemDatabaseCreate>({
+    mutationFn: createWorkItemFromDatabase,
+    onSuccess: () => {
+      addNotification('success', 'Partida creada correctamente desde base de datos');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al crear partida desde base de datos');
+    }
+  });
+};
+
+export const useCreateMaterial = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IMaterial, Error, IMaterial>({
+    mutationFn: createMaterial,
+    onSuccess: () => {
+      addNotification('success', 'Material creado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al crear material');
+    }
+  });
+};
+
+export const useCreateEquipment = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IEquipment, Error, IEquipment>({
+    mutationFn: createEquipment,
+    onSuccess: () => {
+      addNotification('success', 'Equipo creado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al crear equipo');
+    }
+  });
+};
+
+export const useCreateLabor = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<ILabor, Error, ILabor>({
+    mutationFn: createLabor,
+    onSuccess: () => {
+      addNotification('success', 'Mano de obra creada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al crear mano de obra');
     }
   });
 };

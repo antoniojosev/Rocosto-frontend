@@ -27,6 +27,14 @@ export interface IWorkItemCreate {
     budget_id: string
 }
 
+export interface IWorkItemDatabaseCreate {
+    id: string,
+    material: IMaterial[]
+    equipment: IEquipment[]
+    labor: ILabor[]
+    database_id: string
+}
+
 export interface IMaterial {
     id: string
     code: string

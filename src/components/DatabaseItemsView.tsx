@@ -4,6 +4,8 @@ import { IPageDatabase } from '../types/Database';
 import { useDatabaseWithResource } from '../hooks/useDatabases';
 import SearchBar from './Searcn';
 import ResourceTable from './ResourceTable';
+import DatabaseItemModal from './DatabaseItemModal';
+import BudgetItemModal from './BudgetItemModal';
 
 interface Database {
   id: string;
@@ -46,7 +48,8 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
   const [activeTab, setActiveTab] = useState('MAT');
   const [searchTerm, setSearchTerm] = useState('');
   const [resourceType, setResourceType] = useState(activeTab);
-  const { data } = useDatabaseWithResource(database.id, resourceType );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data, refetch } = useDatabaseWithResource(database.id, resourceType);
   
   // Update resourceType when activeTab changes
   React.useEffect(() => {
@@ -56,6 +59,23 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
   // Function to handle custom resource type changes
   const handleResourceTypeChange = (type: string) => {
     setResourceType(type);
+  };
+
+  // Handle adding new item
+  const handleAddItem = () => {
+    setIsModalOpen(true);
+  };
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  // Handle new item created
+  const handleItemCreated = (item: any) => {
+    console.log('New item created:', item);
+    // Refetch data to update the list
+    refetch();
   };
 
   const tabs = [
@@ -106,6 +126,22 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
       }
     ]
 
+  // Obtener la configuración actual según la pestaña activa
+  const activeConfig = tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0];
+
+  // Mock budget for WI tab
+  const mockBudget = {
+    id: "mock-budget-id",
+    name: "Mock Budget",
+    code: "MB-001",
+    company: { id: "1", name: "Company" },
+    created_at: new Date().toISOString(),
+    state: "IN_PROGRESS",
+    owner: { id: "1", username: "Owner" },
+    calculated_by: { id: "2", username: "Calculator" },
+    reviewed_by: { id: "3", username: "Reviewer" }
+  };
+
   return (
     <div className="p-6">
       <button
@@ -126,9 +162,12 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
             <Copy size={20} />
             Copiar Item
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors">
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
+            onClick={handleAddItem}
+          >
             <Plus size={20} />
-            Nuevo Item
+            Agregar {tabs.find(tab => tab.id === activeTab)?.label.replace('es', '').replace('s', '')}
           </button>
         </div>
       </div>
@@ -149,16 +188,6 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         ))}
       </div>
 
-      {/* <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Filtrar por nombre..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-[#2a2a2a] text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700 focus:outline-none focus:border-gray-600"
-        />
-      </div> */}
 
       <SearchBar onSearch={setSearchTerm}/>
 
@@ -168,40 +197,29 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
           data={data?.resources?.results || []} 
           searchTerm={searchTerm} 
         />
-        {/* <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
-          <div className="flex items-c
-          </div>
-          <div className="flex items-center gap-2">
-            Descripción <ArrowUpDown size={14} />
-          </div>enter gap-2">
-            Código <ArrowUpDown size={14} />
-          <div className="flex items-center gap-2">
-            Unidad <ArrowUpDown size={14} />
-          </div>
-          <div className="flex items-center gap-2">
-            Costo <ArrowUpDown size={14} />
-          </div>
-        </div>
-
-        <div className="divide-y divide-gray-800">
-          {(data?.resources?.results ?? [])
-            .filter(item => 
-              item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              item.code.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .map(item => (
-              <div
-                key={item.code}
-                className="grid grid-cols-4 gap-4 p-4 text-sm hover:bg-[#2a2a2a] cursor-pointer transition-colors"
-              >
-                <div className="text-white">{item.code}</div>
-                <div className="text-white">{item.description}</div>
-                <div className="text-white">{item.unit.name}</div>
-                <div className="text-white">{item.cost} US$</div>
-              </div>
-            ))}
-        </div> */}
       </div>
+
+      {/* Modal for creating new items */}
+      {isModalOpen && activeTab !== 'WI' && (
+        <DatabaseItemModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          resourceType={activeTab}
+          databaseId={database.id}
+          onAdd={handleItemCreated}
+          columns={activeConfig.columns}
+        />
+      )}
+
+      {/* Use BudgetItemModal for workitems (WI) */}
+      {isModalOpen && activeTab === 'WI' && (
+        <BudgetItemModal 
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          database={database}
+          onAdd={handleItemCreated}
+        />
+      )}
     </div>
   );
 };

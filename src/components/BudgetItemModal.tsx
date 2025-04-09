@@ -3,18 +3,19 @@ import { Copy, X } from 'lucide-react';
 import CopyItemModal from './CopyItemModal';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
-import { useCreateWorkItem } from '../hooks/useDatabases';
+import { useCreateWorkItem, useCreateWorkItemFromDatabase } from '../hooks/useDatabases';
 import { IBudget } from '../types/Budget';
-import { IWorkItem } from '../types/Database';
+import { IWorkItem, IPageDatabase } from '../types/Database';
 
 interface BudgetItemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  detailBudget: IBudget;
+  detailBudget?: IBudget;
+  database?: IPageDatabase;
   onAdd: (work_item: IWorkItem) => void;
 }
 
-const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, detailBudget, onAdd }) => {
+const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, detailBudget, database, onAdd }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [unitaryType, setUnitaryType] = useState('unitary');
   const [copyModalType, setCopyModalType] = useState<'partida' | 'material' | 'equipo' | 'mano-de-obra' | null>(null);
@@ -29,7 +30,7 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
     material: [],
     equipment: [],
     labor: [],
-    budget_id: detailBudget.id,
+    budget_id: detailBudget?.id,
     database: null,
     total_labor_cost: 0,
     total_equipment_cost: 0,
@@ -45,23 +46,49 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
       unit: '',
       yield_rate: 0,
       material_unit_usage: 'UNITARY',
-      budget_id: detailBudget.id
+      budget_id: detailBudget?.id
     }
   });
 
-  const mutation = useCreateWorkItem();
+  const budgetMutation = useCreateWorkItem();
+  const databaseMutation = useCreateWorkItemFromDatabase();
 
   const onSubmit: SubmitHandler<IWorkItem> = data => {
-    const dataToCreate = { ...data, budget_id: detailBudget.id }
-    console.log('Datos del formulario:', dataToCreate);
-
-    mutation.mutate(dataToCreate, {
-      onSuccess: (data) => {
-        console.log('response: ', data)
-        onAdd(data)
-        onClose()
-      }
-    });
+    console.log('Datos del formulario:', data);
+    
+    if (database) {
+      // Create workitem for database
+      const dataToCreate = { 
+        ...data, 
+        id: uuidv4(),
+        database_id: database.id,
+        material: [],
+        equipment: [],
+        labor: []
+      };
+      
+      databaseMutation.mutate(dataToCreate, {
+        onSuccess: (data) => {
+          console.log('Database workitem created: ', data);
+          onAdd(data);
+          onClose();
+        }
+      });
+    } else if (detailBudget) {
+      // Create workitem for budget
+      const dataToCreate = { 
+        ...data, 
+        budget_id: detailBudget.id
+      };
+      
+      budgetMutation.mutate(dataToCreate, {
+        onSuccess: (data) => {
+          console.log('Budget workitem created: ', data);
+          onAdd(data);
+          onClose();
+        }
+      });
+    }
   };
 
   if (!isOpen) return null;
