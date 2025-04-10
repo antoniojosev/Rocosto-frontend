@@ -61,6 +61,21 @@ export const createLabor = async (labor: ILabor): Promise<ILabor> => {
   return response.data;
 };
 
+export const updateMaterial = async (material: IMaterial): Promise<IMaterial> => {
+  const response = await client.put<IMaterial>(`/databases/materials/${material.id}/`, material);
+  return response.data;
+};
+
+export const updateEquipment = async (equipment: IEquipment): Promise<IEquipment> => {
+  const response = await client.put<IEquipment>(`/databases/equipment/${equipment.id}/`, equipment);
+  return response.data;
+};
+
+export const updateLabor = async (labor: ILabor): Promise<ILabor> => {
+  const response = await client.put<ILabor>(`/databases/labor/${labor.id}/`, labor);
+  return response.data;
+};
+
 export const deleteMaterial = async (id: string): Promise<void> => {
   await client.delete(`/databases/materials/${id}/`);
 };

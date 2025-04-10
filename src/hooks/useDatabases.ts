@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createDatabase, createWorkItem, createWorkItemFromDatabase, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem, createMaterial, createEquipment, createLabor } from '../api/endpoints/databases';
+import { createDatabase, createWorkItem, createWorkItemFromDatabase, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem, createMaterial, createEquipment, createLabor, updateMaterial, updateEquipment, updateLabor } from '../api/endpoints/databases';
 import { ICreateDatabase, IPageDatabase, IUnit, IWorkItem, IWorkItemCreate, IWorkItemDatabaseCreate, IMaterial, IEquipment, ILabor } from '../types/Database';
 import { useNotification } from '../context/NotificationContext';
 import { useErrorHandler } from './useErrorHandler';
@@ -195,6 +195,57 @@ export const useCreateLabor = () => {
     },
     onError: (error) => {
       handleError(error, 'Error al crear mano de obra');
+    }
+  });
+};
+
+export const useUpdateMaterial = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IMaterial, Error, IMaterial>({
+    mutationFn: updateMaterial,
+    onSuccess: () => {
+      addNotification('success', 'Material actualizado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al actualizar material');
+    }
+  });
+};
+
+export const useUpdateEquipment = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<IEquipment, Error, IEquipment>({
+    mutationFn: updateEquipment,
+    onSuccess: () => {
+      addNotification('success', 'Equipo actualizado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al actualizar equipo');
+    }
+  });
+};
+
+export const useUpdateLabor = () => {
+  const { addNotification } = useNotification();
+  const { handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  
+  return useMutation<ILabor, Error, ILabor>({
+    mutationFn: updateLabor,
+    onSuccess: () => {
+      addNotification('success', 'Mano de obra actualizada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Error al actualizar mano de obra');
     }
   });
 };
