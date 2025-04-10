@@ -42,6 +42,13 @@ export const updateWorkItem = async (workItem: IWorkItemCreate): Promise<IWorkIt
   return response.data;
 };
 
+export const updateWorkItemFromDatabase = async (workItem: IWorkItemDatabaseCreate): Promise<IWorkItem> => {
+  console.log('Endpoint updateWorkItemFromDatabase llamado con:', workItem);
+  console.log('URL de la petición:', `/databases/database-work-items/${workItem.id}/`);
+  const response = await client.put<IWorkItem>(`/databases/database-work-items/${workItem.id}/`, workItem);
+  return response.data;
+};
+
 export const deleteWorkItem = async (id: string): Promise<void> => {
   await client.delete(`/databases/work-items/${id}/`);
 };

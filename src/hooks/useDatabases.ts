@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createDatabase, createWorkItem, createWorkItemFromDatabase, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem, createMaterial, createEquipment, createLabor, updateMaterial, updateEquipment, updateLabor } from '../api/endpoints/databases';
+import { createDatabase, createWorkItem, createWorkItemFromDatabase, deleteDatabase, deleteEquipment, deleteLabor, deleteMaterial, deleteWorkItem, fetchDatabase, fetchDatabaseWithResource, getUnits, updateDatabase, updateWorkItem, createMaterial, createEquipment, createLabor, updateMaterial, updateEquipment, updateLabor, updateWorkItemFromDatabase } from '../api/endpoints/databases';
 import { ICreateDatabase, IPageDatabase, IUnit, IWorkItem, IWorkItemCreate, IWorkItemDatabaseCreate, IMaterial, IEquipment, ILabor } from '../types/Database';
 import { useNotification } from '../context/NotificationContext';
 import { useErrorHandler } from './useErrorHandler';
@@ -144,6 +144,30 @@ export const useCreateWorkItemFromDatabase = () => {
     },
     onError: (error) => {
       handleError(error, 'Error al crear partida desde base de datos');
+    }
+  });
+};
+
+export const useUpdateWorkItemFromDatabase = () => {
+  const queryClient = useQueryClient();
+  const { handleError } = useErrorHandler();
+  const { addNotification } = useNotification();
+
+  return useMutation({
+    mutationFn: (workItem: IWorkItemDatabaseCreate) => {
+      console.log('useUpdateWorkItemFromDatabase recibió:', workItem);
+      return updateWorkItemFromDatabase(workItem);
+    },
+    onSuccess: (data) => {
+      console.log('Respuesta exitosa de updateWorkItemFromDatabase:', data);
+      queryClient.invalidateQueries({ queryKey: ['database'] });
+      addNotification('success', 'La partida se ha actualizado correctamente');
+    },
+    onError: (error: any) => {
+      console.error('Error en updateWorkItemFromDatabase:', error);
+      console.error('Detalles del error:', error.response?.data);
+      handleError(error);
+      addNotification('error', 'Error al actualizar la partida');
     }
   });
 };

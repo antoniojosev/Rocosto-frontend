@@ -399,13 +399,9 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         <BudgetItemModal 
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          detailBudget={{
-            id: database.id,
-            name: database.name,
-            company: { id: "1", name: "Mock Company" },
-            work_item: []
-          }}
+          database={database}
           onAdd={handleItemCreated}
+          editItem={editItem}
         />
       )}
 

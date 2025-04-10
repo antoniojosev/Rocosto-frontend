@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, X } from 'lucide-react';
 import CopyItemModal from './CopyItemModal';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
-import { useCreateWorkItem, useCreateWorkItemFromDatabase } from '../hooks/useDatabases';
+import { useCreateWorkItem, useCreateWorkItemFromDatabase, useUpdateWorkItem, useUpdateWorkItemFromDatabase } from '../hooks/useDatabases';
 import { IBudget } from '../types/Budget';
 import { IWorkItem, IPageDatabase } from '../types/Database';
 
@@ -13,9 +13,10 @@ interface BudgetItemModalProps {
   detailBudget?: IBudget;
   database?: IPageDatabase;
   onAdd: (work_item: IWorkItem) => void;
+  editItem?: IWorkItem;
 }
 
-const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, detailBudget, database, onAdd }) => {
+const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, detailBudget, database, onAdd, editItem }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [unitaryType, setUnitaryType] = useState('unitary');
   const [copyModalType, setCopyModalType] = useState<'partida' | 'material' | 'equipo' | 'mano-de-obra' | null>(null);
@@ -38,34 +39,108 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
     total_cost: 0
   });
 
-  const { register, handleSubmit, formState: { errors } } = useForm<IWorkItem>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<IWorkItem>({
     defaultValues: {
-      code: '',
-      covening_code: '',
-      description: '',
-      unit: '',
-      yield_rate: 0,
-      material_unit_usage: 'UNITARY',
+      code: editItem?.code || '',
+      covening_code: editItem?.covening_code || '',
+      description: editItem?.description || '',
+      unit: editItem?.unit || '',
+      yield_rate: editItem?.yield_rate || 0,
+      material_unit_usage: editItem?.material_unit_usage || 'UNITARY',
       budget_id: detailBudget?.id
     }
   });
 
+  // Actualizar los valores del formulario cuando se edita un ítem
+  useEffect(() => {
+    if (editItem) {
+      reset({
+        ...editItem,
+        budget_id: detailBudget?.id
+      });
+      setFormData({
+        ...editItem,
+        budget_id: detailBudget?.id
+      });
+    }
+  }, [editItem, reset, detailBudget?.id]);
+
   const budgetMutation = useCreateWorkItem();
   const databaseMutation = useCreateWorkItemFromDatabase();
+  const updateWorkItemMutation = useUpdateWorkItem();
+  const updateWorkItemFromDatabaseMutation = useUpdateWorkItemFromDatabase();
 
   const onSubmit: SubmitHandler<IWorkItem> = data => {
-    console.log('Datos del formulario:', data);
+    console.log('Datos del formulario:', database);
     
+    // Si estamos editando un item existente
+    if (editItem) {
+      if (database) {
+        // Para actualizar un workitem de base de datos, enviamos solo los campos necesarios
+        // Asegurarnos de usar el endpoint correcto enviando solo los campos necesarios
+        const dataToUpdate = {
+          id: editItem.id,
+          code: data.code,
+          covening_code: data.covening_code,
+          description: data.description,
+          unit: data.unit,
+          yield_rate: data.yield_rate,
+          material_unit_usage: data.material_unit_usage,
+          database_id: database.id
+        };
+        
+        console.log('Enviando datos para actualizar partida de base de datos:', dataToUpdate);
+        
+        // Usar directamente el endpoint para base de datos
+        updateWorkItemFromDatabaseMutation.mutate(dataToUpdate, {
+          onSuccess: (updatedData) => {
+            console.log('Partida de base de datos actualizada correctamente:', updatedData);
+            onAdd(updatedData);
+            onClose();
+          },
+          onError: (error: any) => {
+            console.error('Error al actualizar partida de base de datos:', error);
+            console.error('Detalles del error:', error.response?.data);
+          }
+        });
+      } else {
+        // Para presupuestos, enviamos todos los datos
+        const dataToUpdate = {
+          ...data,
+          id: editItem.id,
+          budget_id: detailBudget?.id || null
+        };
+        
+        updateWorkItemMutation.mutate(dataToUpdate, {
+          onSuccess: (updatedData) => {
+            console.log('WorkItem updated: ', updatedData);
+            onAdd(updatedData);
+            onClose();
+          }
+        });
+      }
+      
+      return;
+    }
+    
+    // Si estamos creando un nuevo item
     if (database) {
       // Create workitem for database
       const dataToCreate = { 
-        ...data, 
         id: uuidv4(),
+        code: data.code,
+        covening_code: data.covening_code,
+        description: data.description,
+        unit: data.unit,
+        yield_rate: data.yield_rate,
+        material_unit_usage: data.material_unit_usage,
         database_id: database.id,
         material: [],
         equipment: [],
         labor: []
       };
+      
+      console.log('Datos para crear nueva partida en base de datos:', dataToCreate);
       
       databaseMutation.mutate(dataToCreate, {
         onSuccess: (data) => {
@@ -182,9 +257,11 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-white text-2xl font-semibold">Nueva Partida</h2>
+                <h2 className="text-white text-2xl font-semibold">{editItem ? 'Editar Partida' : 'Nueva Partida'}</h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  Complete los detalles de la nueva partida. Incluya información general, materiales, equipos y mano de obra.
+                  {editItem 
+                    ? 'Modifique los detalles de la partida. Puede editar información general, materiales, equipos y mano de obra.'
+                    : 'Complete los detalles de la nueva partida. Incluya información general, materiales, equipos y mano de obra.'}
                 </p>
               </div>
               <div className="flex items-center gap-4">
@@ -343,7 +420,7 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
                   type="submit"
                   className="px-4 py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors"
                 >
-                  Crear Partida
+                  {editItem ? 'Guardar Cambios' : 'Crear Partida'}
                 </button>
               </div>
             </div>
