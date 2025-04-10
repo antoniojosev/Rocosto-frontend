@@ -17,6 +17,7 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
   const { data } = useBudget();
 
   const handleBudgetClick = (budget: IBudget): void => {
+    console.log('aqii', data);
     onBudgetClick(budget);
   };
 
@@ -32,7 +33,7 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
       <SearchBar onSearch={setSearchTerm}/>
 
       <div className="bg-[#1a1a1a] rounded-lg border border-gray-800">
-        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
+        <div className="grid grid-cols-7 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
           <div className="col-span-2 flex items-center gap-2">
             Nombre <ArrowUpDown size={14} />
           </div>
@@ -47,6 +48,9 @@ const BudgetListView: React.FC<BudgetListViewProps> = ({ onBudgetClick }) => {
           </div>
           <div className="flex items-center gap-2">
             Total <ArrowUpDown size={14} />
+          </div>
+          <div className="flex items-center gap-2">
+            Acciones
           </div>
         </div>
 

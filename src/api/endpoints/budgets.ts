@@ -1,4 +1,4 @@
-import { IBudget, IBudgetCreate } from '../../types/Budget';
+import { IBudget, IBudgetCreate, IBudgetUpdate } from '../../types/Budget';
 import client from '../client';
 
 
@@ -15,5 +15,14 @@ export const createBudget = async (newBudget: IBudgetCreate): Promise<IBudget> =
 
 export const getBudgetById = async (id: string): Promise<IBudget> => {
   const response = await client.get<IBudget>(`/budgets/${id}`);
+  return response.data;
+};
+
+export const deleteBudget = async (id: string): Promise<void> => {
+  await client.delete(`/budgets/${id}/`);
+};
+
+export const updateBudget = async ({ id, budget }: { id: string; budget: IBudgetUpdate }): Promise<IBudget> => {
+  const response = await client.put<IBudget>(`/budgets/${id}/`, budget);
   return response.data;
 };

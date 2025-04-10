@@ -15,10 +15,11 @@ interface SelectOwnerProps {
     systemUsers: SystemUser[];
     onOwnerSelect: (owner: IOwner) => void;
     label: string;
-    value?: string | null ;
+    value?: IOwner | null | string | number;
+    className?: string;
 }
 
-export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value }: SelectOwnerProps) => {
+export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value, className }: SelectOwnerProps) => {
     const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false);
     const [ownerSearchTerm, setOwnerSearchTerm] = useState('');
 
@@ -29,15 +30,15 @@ export const SelectOwner = ({ label, data, systemUsers, onOwnerSelect, value }: 
     
     // TODO: evaluar alternativa a esto
     const selectedOwner = value 
-    ? data?.flatMap(company => company.owners).find(owner => owner.id === value) 
-    : null;
+        ? data?.flatMap(company => company.owners).find(owner => owner.id === value.id) 
+        : null;
 
     return (
         <div className="relative">
             <label className="block text-white mb-2">{label}</label>
             <div className="relative">
                 <div
-                    className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 cursor-pointer flex items-center"
+                    className={`w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 cursor-pointer flex items-center ${className || ''}`}
                     onClick={() => setIsOwnerDropdownOpen(!isOwnerDropdownOpen)}
                 >
                     {selectedOwner ? (

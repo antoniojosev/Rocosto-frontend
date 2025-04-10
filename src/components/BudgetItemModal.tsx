@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Copy, X } from 'lucide-react';
 import CopyItemModal from './CopyItemModal';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
-import { useCreateWorkItem } from '../hooks/useDatabases';
+import { useCreateWorkItem, useCreateWorkItemFromDatabase, useUpdateWorkItem, useUpdateWorkItemFromDatabase } from '../hooks/useDatabases';
 import { IBudget } from '../types/Budget';
-import { IWorkItem } from '../types/Database';
-
-
+import { IWorkItem, IPageDatabase } from '../types/Database';
 
 interface BudgetItemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  detailBudget: IBudget;
-  onAdd: (work_item : IWorkItem ) => void;
+  detailBudget?: IBudget;
+  database?: IPageDatabase;
+  onAdd: (work_item: IWorkItem) => void;
+  editItem?: IWorkItem;
 }
 
-const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, detailBudget, onAdd }) => {
+const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, detailBudget, database, onAdd, editItem }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [unitaryType, setUnitaryType] = useState('unitary');
   const [copyModalType, setCopyModalType] = useState<'partida' | 'material' | 'equipo' | 'mano-de-obra' | null>(null);
@@ -31,7 +31,7 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
     material: [],
     equipment: [],
     labor: [],
-    budget_id: detailBudget.id,
+    budget_id: detailBudget?.id,
     database: null,
     total_labor_cost: 0,
     total_equipment_cost: 0,
@@ -39,32 +39,134 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
     total_cost: 0
   });
 
-  const { register, handleSubmit, formState: { errors } } = useForm<IWorkItem>();
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<IWorkItem>({
+    defaultValues: {
+      code: editItem?.code || '',
+      covening_code: editItem?.covening_code || '',
+      description: editItem?.description || '',
+      unit: editItem?.unit || '',
+      yield_rate: editItem?.yield_rate || 0,
+      material_unit_usage: editItem?.material_unit_usage || 'UNITARY',
+      budget_id: detailBudget?.id
+    }
+  });
 
-  const mutation = useCreateWorkItem();
+  // Actualizar los valores del formulario cuando se edita un ítem
+  useEffect(() => {
+    if (editItem) {
+      reset({
+        ...editItem,
+        budget_id: detailBudget?.id
+      });
+      setFormData({
+        ...editItem,
+        budget_id: detailBudget?.id
+      });
+    }
+  }, [editItem, reset, detailBudget?.id]);
+
+  const budgetMutation = useCreateWorkItem();
+  const databaseMutation = useCreateWorkItemFromDatabase();
+  const updateWorkItemMutation = useUpdateWorkItem();
+  const updateWorkItemFromDatabaseMutation = useUpdateWorkItemFromDatabase();
 
   const onSubmit: SubmitHandler<IWorkItem> = data => {
-    const dataToCreate = {...data, budget_id: detailBudget.id}
-    console.log('Datos del formulario:', dataToCreate);
+    console.log('Datos del formulario:', database);
     
-    mutation.mutate(dataToCreate, {
-      onSuccess: (data) => {
-        console.log('response: ', data)
-        onAdd(data)
-        onClose()
+    // Si estamos editando un item existente
+    if (editItem) {
+      if (database) {
+        // Para actualizar un workitem de base de datos, enviamos solo los campos necesarios
+        // Asegurarnos de usar el endpoint correcto enviando solo los campos necesarios
+        const dataToUpdate = {
+          id: editItem.id,
+          code: data.code,
+          covening_code: data.covening_code,
+          description: data.description,
+          unit: data.unit,
+          yield_rate: data.yield_rate,
+          material_unit_usage: data.material_unit_usage,
+          database_id: database.id
+        };
+        
+        console.log('Enviando datos para actualizar partida de base de datos:', dataToUpdate);
+        
+        // Usar directamente el endpoint para base de datos
+        updateWorkItemFromDatabaseMutation.mutate(dataToUpdate, {
+          onSuccess: (updatedData) => {
+            console.log('Partida de base de datos actualizada correctamente:', updatedData);
+            onAdd(updatedData);
+            onClose();
+          },
+          onError: (error: any) => {
+            console.error('Error al actualizar partida de base de datos:', error);
+            console.error('Detalles del error:', error.response?.data);
+          }
+        });
+      } else {
+        // Para presupuestos, enviamos todos los datos
+        const dataToUpdate = {
+          ...data,
+          id: editItem.id,
+          budget_id: detailBudget?.id || null
+        };
+        
+        updateWorkItemMutation.mutate(dataToUpdate, {
+          onSuccess: (updatedData) => {
+            console.log('WorkItem updated: ', updatedData);
+            onAdd(updatedData);
+            onClose();
+          }
+        });
       }
-    });
+      
+      return;
+    }
+    
+    // Si estamos creando un nuevo item
+    if (database) {
+      // Create workitem for database
+      const dataToCreate = { 
+        id: uuidv4(),
+        code: data.code,
+        covening_code: data.covening_code,
+        description: data.description,
+        unit: data.unit,
+        yield_rate: data.yield_rate,
+        material_unit_usage: data.material_unit_usage,
+        database_id: database.id,
+        material: [],
+        equipment: [],
+        labor: []
+      };
+      
+      console.log('Datos para crear nueva partida en base de datos:', dataToCreate);
+      
+      databaseMutation.mutate(dataToCreate, {
+        onSuccess: (data) => {
+          console.log('Database workitem created: ', data);
+          onAdd(data);
+          onClose();
+        }
+      });
+    } else if (detailBudget) {
+      // Create workitem for budget
+      const dataToCreate = { 
+        ...data, 
+        budget_id: detailBudget.id
+      };
+      
+      budgetMutation.mutate(dataToCreate, {
+        onSuccess: (data) => {
+          console.log('Budget workitem created: ', data);
+          onAdd(data);
+          onClose();
+        }
+      });
+    }
   };
 
   if (!isOpen) return null;
-
-  const tabs = [
-    { id: 'general', label: 'General' },
-    // { id: 'materiales', label: 'Materiales' },
-    // { id: 'equipos', label: 'Equipos' },
-    // { id: 'mano-de-obra', label: 'Mano de Obra' },
-    // { id: 'mediciones', label: 'Mediciones' }, 
-  ];
 
   const handleCopyItem = (type: 'partida' | 'material' | 'equipo' | 'mano-de-obra') => {
     setCopyModalType(type);
@@ -97,7 +199,6 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
     setCopyModalType(null);
   };
 
-
   const modalTitles = {
     partida: 'Copiar Partida',
     material: 'Copiar Material',
@@ -106,7 +207,6 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
   };
 
   const handleAddNewItem = (type: 'material' | 'equipment' | 'labor') => {
-
     if (type === 'material') {
       const newItem = {
         code: '',
@@ -145,6 +245,11 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
     }
   };
 
+  // CSS classes for form fields
+  const baseInputClass = "w-full bg-[#2a2a2a] text-white rounded-md p-2 border";
+  const validInputClass = `${baseInputClass} border-gray-700`;
+  const invalidInputClass = `${baseInputClass} border-red-500`;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -152,372 +257,187 @@ const BudgetItemModal: React.FC<BudgetItemModalProps> = ({ isOpen, onClose, deta
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-white text-2xl font-semibold">Nueva Partida</h2>
+                <h2 className="text-white text-2xl font-semibold">{editItem ? 'Editar Partida' : 'Nueva Partida'}</h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  Complete los detalles de la nueva partida. Incluya información general, materiales, equipos y mano de obra.
+                  {editItem 
+                    ? 'Modifique los detalles de la partida. Puede editar información general, materiales, equipos y mano de obra.'
+                    : 'Complete los detalles de la nueva partida. Incluya información general, materiales, equipos y mano de obra.'}
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                {/* <button
+                <button
                   onClick={() => handleCopyItem('partida')}
                   className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors"
                 >
                   <Copy size={20} />
                   Copiar Partida Existente
-                </button> */}
+                </button>
                 <button onClick={onClose} className="text-gray-400 hover:text-white">
                   <X size={24} />
                 </button>
               </div>
             </div>
 
-            {/* <div className="flex gap-2 mb-6">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === tab.id
-                    ? 'bg-white text-black'
-                    : 'bg-[#2a2a2a] text-gray-400 hover:text-white'
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div> */}
-
             <div className="overflow-y-auto max-h-[calc(90vh-16rem)] pr-2 custom-scrollbar">
-              {activeTab === 'general' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-white mb-2">Código</label>
-                      <input
-                        id='code'
-                        {...register('code', { required: 'El código es obligatorio' })}
-                        type="text"
-                        // value={formData.codigo}
-                        // onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                        className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white mb-2">Código Covenin</label>
-                      <input
-                        type="text"
-                        id='covening_code'
-                        {...register('covening_code', { required: 'El código convening es obligatorio' })}
-                        // value={formData.codigoCovenin}
-                        // onChange={(e) => setFormData({ ...formData, codigoCovenin: e.target.value })}
-                        className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-white mb-2">Descripción</label>
-                    <textarea
-                      // value={formData.descripcion}
-                      // onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                      id='description'
-                      {...register('description', { required: 'La descripcion es obligatoria' })}
-                      className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700 h-24 resize-none"
+                    <label className="block text-white mb-2">Código</label>
+                    <input
+                      id='code'
+                      {...register('code', { required: 'El código es obligatorio' })}
+                      type="text"
+                      className={errors.code ? invalidInputClass : validInputClass}
+                      placeholder={errors.code ? "Campo obligatorio" : ""}
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-white mb-2">Unidad</label>
-                      <input
-                        type="text"
-                        id='unit'
-                        {...register('unit', { required: 'La unidad es obligatoria' })}
-                        // value={formData.unidad}
-                        // onChange={(e) => setFormData({ ...formData, unidad: e.target.value })}
-                        className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white mb-2">Rendimiento</label>
-                      <input
-                        type="number"
-                        id='yield_rate'
-                        {...register('yield_rate', { required: 'El rendimiento es obligatorio' })}
-                        // value={formData.rendimiento}
-                        // onChange={(e) => setFormData({ ...formData, rendimiento: Number(e.target.value) })}
-                        className="w-full bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                      />
-                    </div>
+                    {errors.code && (
+                      <p className="text-red-500 text-sm mt-1">{errors.code.message}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-white mb-4">Usar unitario de materiales</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-gray-300">
-                        <input
-                          type="radio"
-                          id='UNITARY'
-                          
-                          {...register('material_unit_usage')}
-                          // name="unitary"
-                          value="UNITARY"
-                          // checked={unitaryType === 'unitary'}
-                          // onChange={(e) => setUnitaryType(e.target.value)}
-                          className="text-orange-500"
-                        />
-                        Unitario
-                      </label>
-                      <label className="flex items-center gap-2 text-gray-300">
-                        <input
-                          type="radio"
-                          id='DIVIDED'
-                          {...register('material_unit_usage')}
-                          // name="unitary"
-                          value="DIVIDED"
-                          // checked={unitaryType === 'divided'}
-                          // onChange={(e) => setUnitaryType(e.target.value)}
-                          className="text-orange-500"
-                        />
-                        Dividido por la cantidad
-                      </label>
-                    </div>
+                    <label className="block text-white mb-2">Código Covenin</label>
+                    <input
+                      type="text"
+                      id='covening_code'
+                      {...register('covening_code', { required: 'El código Covenin es obligatorio' })}
+                      className={errors.covening_code ? invalidInputClass : validInputClass}
+                      placeholder={errors.covening_code ? "Campo obligatorio" : ""}
+                    />
+                    {errors.covening_code && (
+                      <p className="text-red-500 text-sm mt-1">{errors.covening_code.message}</p>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {/* {activeTab === 'materiales' && (
                 <div>
-                  <div className="flex justify-end gap-2 mb-4">
-                    <button
-                      onClick={() => handleCopyItem('material')}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors"
-                    >
-                      <Copy size={20} />
-                      Copiar Material
-                    </button>
-                    <button
-                      onClick={() => handleAddNewItem('material')}
-                      className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors">
-                      <Plus size={20} />
-                      Agregar Material
-                    </button>
+                  <label className="block text-white mb-2">Descripción</label>
+                  <textarea
+                    id='description'
+                    {...register('description', { required: 'La descripción es obligatoria' })}
+                    className={errors.description ? invalidInputClass : validInputClass}
+                    placeholder={errors.description ? "Campo obligatorio" : ""}
+                  />
+                  {errors.description && (
+                    <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white mb-2">Unidad</label>
+                    <input
+                      type="text"
+                      id='unit'
+                      {...register('unit', { required: 'La unidad es obligatoria' })}
+                      className={errors.unit ? invalidInputClass : validInputClass}
+                      placeholder={errors.unit ? "Campo obligatorio" : ""}
+                    />
+                    {errors.unit && (
+                      <p className="text-red-500 text-sm mt-1">{errors.unit.message}</p>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-4 gap-4 mb-2 text-sm text-gray-400">
-                    <div>Código</div>
-                    <div>Descripción</div>
-                    <div>Unidad</div>
-                    <div>Costo</div>
+                  <div>
+                    <label className="block text-white mb-2">Rendimiento</label>
+                    <input
+                      type="number"
+                      id='yield_rate'
+                      {...register('yield_rate', { 
+                        required: 'El rendimiento es obligatorio',
+                        min: {
+                          value: 0,
+                          message: 'El rendimiento debe ser mayor o igual a 0'
+                        }
+                      })}
+                      className={errors.yield_rate ? invalidInputClass : validInputClass}
+                      placeholder={errors.yield_rate ? "Campo obligatorio" : ""}
+                    />
+                    {errors.yield_rate && (
+                      <p className="text-red-500 text-sm mt-1">{errors.yield_rate.message}</p>
+                    )}
                   </div>
-
+                </div>
+                <div>
+                  <label className="block text-white mb-4">Usar unitario de materiales</label>
                   <div className="space-y-2">
-                    {formData.material.map((material: IMaterial, index) => (
-                      <div key={material.id} className="grid grid-cols-4 gap-4 items-center">
-                        <input
-                          type="text"
-                          {...register('code', {required: 'El rendimiento es obligatorio' })}
-                          defaultValue={material.code}
-                          className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                          placeholder="Código"
-                        />
-                        <input
-                          type="text"
-                          {...register('description', {required: 'El rendimiento es obligatorio' })}
-                          defaultValue={material.description}
-                          className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                          placeholder="Descripción"
-                        />
-                        <input
-                          type="text"
-                          {...register(`material.${index}.unit_id`, {required: 'El rendimiento es obligatorio' })}
-                          defaultValue={material.unit_id}
-                          className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                        />
-                        <input
-                          type="number"
-                          {...register(`material.${index}.cost`, {required: 'El costo es obligatorio' })}
-                          defaultValue={material.cost}
-                          // onChange={(e) => handleUpdateItem('material', index, 'costo', Number(e.target.value))}
-                          className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                          placeholder="Costo"
-                        />
-
-                        <button
-                          onClick={() => {
-                            const newMateriales = [...formData.material];
-                            newMateriales.splice(index, 1);
-                            setFormData({ ...formData, material: newMateriales });
-                          }}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </div>
-                    ))}
-                </div>
-                </div>
-              )}
-
-            {activeTab === 'equipos' && (
-              <div>
-                <div className="flex justify-end gap-2 mb-4">
-                  <button
-                    onClick={() => handleCopyItem('equipo')}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors"
-                  >
-                    <Copy size={20} />
-                    Copiar Equipo
-                  </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors">
-                    <Plus size={20} />
-                    Agregar Equipo
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-5 gap-4 mb-2 text-sm text-gray-400">
-                  <div>Código</div>
-                  <div>Descripción</div>
-                  <div>Cantidad</div>
-                  <div>Costo</div>
-                  <div>Depreciación</div>
-                </div>
-
-                <div className="space-y-2">
-                  {formData.equipos.map((equipo: any, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-4 items-center">
-                      <div className="text-white">{equipo.codigo}</div>
-                      <div className="text-white">{equipo.descripcion}</div>
+                    <label className="flex items-center gap-2 text-gray-300">
                       <input
-                        type="number"
-                        defaultValue={1}
-                        className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
+                        type="radio"
+                        id='UNITARY'
+                        {...register('material_unit_usage', { required: 'Seleccione una opción' })}
+                        value="UNITARY"
+                        className={`text-orange-500 ${errors.material_unit_usage ? 'border-red-500' : ''}`}
                       />
-                      <div className="text-white">{equipo.costo}</div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          defaultValue={0}
-                          className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
-                        />
-                        <button
-                          onClick={() => {
-                            const newEquipos = [...formData.equipos];
-                            newEquipos.splice(index, 1);
-                            setFormData({ ...formData, equipos: newEquipos });
-                          }}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'mano-de-obra' && (
-              <div>
-                <div className="flex justify-end gap-2 mb-4">
-                  <button
-                    onClick={() => handleCopyItem('mano-de-obra')}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors"
-                  >
-                    <Copy size={20} />
-                    Copiar Mano de Obra
-                  </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors">
-                    <Plus size={20} />
-                    Agregar Mano de Obra
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 mb-2 text-sm text-gray-400">
-                  <div>Código</div>
-                  <div>Descripción</div>
-                  <div>Cantidad</div>
-                  <div>Costo</div>
-                </div>
-
-                <div className="space-y-2">
-                  {formData.manoDeObra.map((mano: any, index) => (
-                    <div key={index} className="grid grid-cols-4 gap-4 items-center">
-                      <div className="text-white">{mano.codigo}</div>
-                      <div className="text-white">{mano.descripcion}</div>
+                      Unitario
+                    </label>
+                    <label className="flex items-center gap-2 text-gray-300">
                       <input
-                        type="number"
-                        defaultValue={1}
-                        className="bg-[#2a2a2a] text-white rounded-md p-2 border border-gray-700"
+                        type="radio"
+                        id='DIVIDED'
+                        {...register('material_unit_usage', { required: 'Seleccione una opción' })}
+                        value="DIVIDED"
+                        className={`text-orange-500 ${errors.material_unit_usage ? 'border-red-500' : ''}`}
                       />
-                      <div className="flex items-center gap-2">
-                        <div className="text-white">{mano.costo}</div>
-                        <button
-                          onClick={() => {
-                            const newManoDeObra = [...formData.manoDeObra];
-                            newManoDeObra.splice(index, 1);
-                            setFormData({ ...formData, manoDeObra: newManoDeObra });
-                          }}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )} */}
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-800">
-            <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <h3 className="text-white font-semibold mb-3">Resumen de Costos</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-400">Total Materiales:</p>
-                  <p className="text-white">0.00</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Total Equipos:</p>
-                  <p className="text-white">0.00</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Total Mano de Obra:</p>
-                  <p className="text-white">0.00</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Total Partida:</p>
-                  <p className="text-white font-semibold">0.00</p>
+                      Dividido por la cantidad
+                    </label>
+                    {errors.material_unit_usage && (
+                      <p className="text-red-500 text-sm mt-1">{errors.material_unit_usage.message}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-white bg-[#2a2a2a] rounded-md hover:bg-[#3a3a3a] transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors"
-              >
-                Crear Partida
-              </button>
+            <div className="mt-6 pt-4 border-t border-gray-800">
+              <div className="bg-[#2a2a2a] rounded-lg p-4">
+                <h3 className="text-white font-semibold mb-3">Resumen de Costos</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">Total Materiales:</p>
+                    <p className="text-white">0.00</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Total Equipos:</p>
+                    <p className="text-white">0.00</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Total Mano de Obra:</p>
+                    <p className="text-white">0.00</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Total Partida:</p>
+                    <p className="text-white font-semibold">0.00</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-white bg-[#2a2a2a] rounded-md hover:bg-[#3a3a3a] transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  {editItem ? 'Guardar Cambios' : 'Crear Partida'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {copyModalType && (
-        <CopyItemModal
-          isOpen={true}
-          onClose={() => setCopyModalType(null)}
-          onSelect={handleSelectItem}
-          title={modalTitles[copyModalType]}
-          type={copyModalType}
-        />
-      )}
-    </div>
-    </form >
+        {copyModalType && (
+          <CopyItemModal
+            isOpen={true}
+            onClose={() => setCopyModalType(null)}
+            onSelect={handleSelectItem}
+            title={modalTitles[copyModalType]}
+            type={copyModalType}
+          />
+        )}
+      </div>
+    </form>
   );
 };
 

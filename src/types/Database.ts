@@ -27,6 +27,14 @@ export interface IWorkItemCreate {
     budget_id: string
 }
 
+export interface IWorkItemDatabaseCreate {
+    id: string,
+    material: IMaterial[]
+    equipment: IEquipment[]
+    labor: ILabor[]
+    database_id: string
+}
+
 export interface IMaterial {
     id: string
     code: string
@@ -73,6 +81,23 @@ export interface ILabor {
     total: number
 }
 
+export interface IPageDatabase {
+    id: string
+    code: string
+    name: string
+    description: string
+    total_materials: number
+    total_equipment: number
+    total_labor: number
+    resources: Resources
+}
+
+export interface ICreateDatabase {
+    id: string
+    code: string
+    name: string
+    description: string
+}
 export interface IPageDatabase {
     id: string
     code: string

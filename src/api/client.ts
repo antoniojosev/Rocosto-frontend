@@ -1,7 +1,12 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-const basePath = "https://construlink-backend-g6p7.onrender.com/api"
 
 // Configura el cliente Axios base
+const isDebug = import.meta.env.VITE_DEBUG === 'true';
+
+const basePath = isDebug 
+? import.meta.env.VITE_DEBUG_API_BASE_URL
+: import.meta.env.VITE_PROD_API_BASE_URL;
+
 const client = axios.create({
   baseURL: `${basePath}/v1`,
   headers: {

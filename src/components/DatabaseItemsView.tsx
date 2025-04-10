@@ -1,9 +1,55 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Copy, Search, ArrowUpDown } from 'lucide-react';
-import { IPageDatabase } from '../types/Database';
-import { useDatabaseWithResource } from '../hooks/useDatabases';
+import { ArrowLeft, Plus, Copy, Search, ArrowUpDown, AlertCircle } from 'lucide-react';
+import { IPageDatabase, IMaterial, IEquipment, ILabor, IWorkItem } from '../types/Database';
+import { useDatabaseWithResource, useDeleteItem, useUpdateMaterial, useUpdateEquipment, useUpdateLabor } from '../hooks/useDatabases';
+import { useNotification } from '../context/NotificationContext';
 import SearchBar from './Searcn';
 import ResourceTable from './ResourceTable';
+import DatabaseItemModal from './DatabaseItemModal';
+import BudgetItemModal from './BudgetItemModal';
+import CopyItemModal from './CopyItemModal';
+import RightBudgetContainer from '../views/budgets/components/rightBudgetContainer';
+
+// Componente para confirmar eliminación
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  itemName: string;
+  itemType: string;
+}
+
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, onClose, onConfirm, itemName, itemType }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#1a1a1a] rounded-lg p-6 max-w-md w-full border border-gray-800">
+        <div className="flex items-center gap-3 mb-4">
+          <AlertCircle className="text-red-500" size={24} />
+          <h3 className="text-lg font-medium text-white">Confirmar eliminación</h3>
+        </div>
+        <p className="mb-6 text-gray-300">
+          ¿Está seguro que desea eliminar {itemType} <span className="font-medium text-white">{itemName}</span>? Esta acción no se puede deshacer.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button 
+            className="px-4 py-2 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 transition-colors"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button 
+            className="px-4 py-2 bg-red-500 rounded-md text-white hover:bg-red-600 transition-colors"
+            onClick={onConfirm}
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface Database {
   id: string;
@@ -46,7 +92,17 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
   const [activeTab, setActiveTab] = useState('MAT');
   const [searchTerm, setSearchTerm] = useState('');
   const [resourceType, setResourceType] = useState(activeTab);
-  const { data } = useDatabaseWithResource(database.id, resourceType );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{id: string, name: string, type: string} | null>(null);
+  const { data, refetch } = useDatabaseWithResource(database.id, resourceType);
+  const deleteItemMutation = useDeleteItem();
+  const { addNotification } = useNotification();
+  
+  // Estado para controlar el detalle de una partida
+  const [selectedWorkItem, setSelectedWorkItem] = useState<IWorkItem | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
   
   // Update resourceType when activeTab changes
   React.useEffect(() => {
@@ -56,6 +112,126 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
   // Function to handle custom resource type changes
   const handleResourceTypeChange = (type: string) => {
     setResourceType(type);
+  };
+
+  // Handle adding new item
+  const handleAddItem = () => {
+    setEditItem(null);
+    setIsModalOpen(true);
+  };
+
+  // Handle editing an item
+  const handleEditItem = (item: any) => {
+    setEditItem(item);
+    setIsModalOpen(true);
+  };
+
+  // Handle viewing an item details (for work items)
+  const handleViewItem = (item: any) => {
+    if (activeTab === 'WI') {
+      if (selectedWorkItem?.id === item.id) {
+        // Si hacemos clic en el mismo elemento, alternamos la visibilidad
+        setDetailsVisible(!detailsVisible);
+      } else {
+        // Si hacemos clic en un elemento diferente, lo seleccionamos y mostramos los detalles
+        setSelectedWorkItem(item);
+        setDetailsVisible(true);
+      }
+    }
+  };
+
+  // Handle deleting an item
+  const handleDeleteItem = (item: any) => {
+    let itemType = '';
+    switch (activeTab) {
+      case 'MAT':
+        itemType = 'el material';
+        break;
+      case 'EQU':
+        itemType = 'el equipo';
+        break;
+      case 'LAB':
+        itemType = 'la mano de obra';
+        break;
+      case 'WI':
+        itemType = 'la partida';
+        break;
+    }
+    
+    setItemToDelete({
+      id: item.id,
+      name: item.description || item.code,
+      type: itemType
+    });
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Handle work item update
+  const handleUpdateWorkItem = (key: string, updatedItem: IWorkItem) => {
+    setSelectedWorkItem(updatedItem);
+    refetch();
+  };
+
+  // Close details panel
+  const handleCloseDetails = () => {
+    setDetailsVisible(false);
+  };
+
+  // Confirm deletion
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    let resourceTypeForDelete = '';
+    switch (activeTab) {
+      case 'MAT':
+        resourceTypeForDelete = 'material';
+        break;
+      case 'EQU':
+        resourceTypeForDelete = 'equipment';
+        break;
+      case 'LAB':
+        resourceTypeForDelete = 'labor';
+        break;
+      default:
+        resourceTypeForDelete = '';
+    }
+    
+    try {
+      if (activeTab === 'WI') {
+        // Use a different API endpoint for work items
+        await deleteItemMutation.mutateAsync({ id: itemToDelete.id, type: 'workitem' });
+      } else {
+        await deleteItemMutation.mutateAsync({ id: itemToDelete.id, type: resourceTypeForDelete });
+      }
+      
+      // Si el item que estamos eliminando es el que está seleccionado, cerramos el panel de detalles
+      if (selectedWorkItem && selectedWorkItem.id === itemToDelete.id) {
+        setDetailsVisible(false);
+        setSelectedWorkItem(null);
+      }
+      
+      addNotification('success', 'Item eliminado correctamente');
+      refetch();
+    } catch (error) {
+      console.error('Error al eliminar el item:', error);
+      addNotification('error', 'Error al eliminar el item');
+    }
+    
+    setIsDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditItem(null);
+  };
+
+  // Handle item updated or created
+  const handleItemCreated = (item: any) => {
+    console.log('Item processed:', item);
+    // Refetch data to update the list
+    refetch();
   };
 
   const tabs = [
@@ -106,6 +282,22 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
       }
     ]
 
+  // Obtener la configuración actual según la pestaña activa
+  const activeConfig = tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0];
+
+  // Mock budget for WI tab
+  const mockBudget = {
+    id: "mock-budget-id",
+    name: "Mock Budget",
+    code: "MB-001",
+    company: { id: "1", name: "Company" },
+    created_at: new Date().toISOString(),
+    state: "IN_PROGRESS",
+    owner: { id: "1", username: "Owner" },
+    calculated_by: { id: "2", username: "Calculator" },
+    reviewed_by: { id: "3", username: "Reviewer" }
+  };
+
   return (
     <div className="p-6">
       <button
@@ -126,9 +318,12 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
             <Copy size={20} />
             Copiar Item
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors">
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
+            onClick={handleAddItem}
+          >
             <Plus size={20} />
-            Nuevo Item
+            Agregar {tabs.find(tab => tab.id === activeTab)?.label.replace('es', '').replace('s', '')}
           </button>
         </div>
       </div>
@@ -149,59 +344,77 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         ))}
       </div>
 
-      {/* <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Filtrar por nombre..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-[#2a2a2a] text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700 focus:outline-none focus:border-gray-600"
-        />
-      </div> */}
-
       <SearchBar onSearch={setSearchTerm}/>
 
-      <div className="bg-[#1a1a1a] rounded-lg border border-gray-800">
-        <ResourceTable 
-          config={tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0]} 
-          data={data?.resources?.results || []} 
-          searchTerm={searchTerm} 
-        />
-        {/* <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-800 text-sm text-gray-400">
-          <div className="flex items-c
-          </div>
-          <div className="flex items-center gap-2">
-            Descripción <ArrowUpDown size={14} />
-          </div>enter gap-2">
-            Código <ArrowUpDown size={14} />
-          <div className="flex items-center gap-2">
-            Unidad <ArrowUpDown size={14} />
-          </div>
-          <div className="flex items-center gap-2">
-            Costo <ArrowUpDown size={14} />
-          </div>
+      <div className="flex">
+        {/* Panel principal - Tabla de recursos */}
+        <div className={`transition-all duration-300 ${detailsVisible && selectedWorkItem && activeTab === 'WI' ? 'w-7/12 mr-6' : 'w-full'}`}>
+          <ResourceTable 
+            config={tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0]} 
+            data={data?.resources?.results || []} 
+            searchTerm={searchTerm} 
+            onEdit={handleEditItem}
+            onDelete={handleDeleteItem}
+            onView={activeTab === 'WI' ? handleViewItem : undefined}
+          />
         </div>
 
-        <div className="divide-y divide-gray-800">
-          {(data?.resources?.results ?? [])
-            .filter(item => 
-              item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              item.code.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .map(item => (
-              <div
-                key={item.code}
-                className="grid grid-cols-4 gap-4 p-4 text-sm hover:bg-[#2a2a2a] cursor-pointer transition-colors"
-              >
-                <div className="text-white">{item.code}</div>
-                <div className="text-white">{item.description}</div>
-                <div className="text-white">{item.unit.name}</div>
-                <div className="text-white">{item.cost} US$</div>
+        {/* Panel lateral - Detalles de la partida */}
+        {activeTab === 'WI' && selectedWorkItem && (
+          <div 
+            className={`transition-all duration-300 ease-in-out ${
+              detailsVisible 
+                ? 'opacity-100 translate-x-0 w-5/12' 
+                : 'opacity-0 translate-x-20 w-0 overflow-hidden'
+            }`}
+          >
+            {detailsVisible && selectedWorkItem && (
+              <div className="bg-[#1a1a1a] rounded-lg border border-gray-800 h-full">
+                <RightBudgetContainer
+                  selectedItem={selectedWorkItem}
+                  setSelectedItem={setSelectedWorkItem}
+                  handleUpdateItems={handleUpdateWorkItem}
+                />
               </div>
-            ))}
-        </div> */}
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Modal for creating new items */}
+      {isModalOpen && activeTab !== 'WI' && (
+        <DatabaseItemModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          resourceType={activeTab}
+          databaseId={database.id}
+          onAdd={handleItemCreated}
+          columns={activeConfig.columns}
+          editItem={editItem}
+        />
+      )}
+
+      {/* Use BudgetItemModal for workitems (WI) */}
+      {isModalOpen && activeTab === 'WI' && (
+        <BudgetItemModal 
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          database={database}
+          onAdd={handleItemCreated}
+          editItem={editItem}
+        />
+      )}
+
+      {/* Confirm delete dialog */}
+      {isDeleteDialogOpen && itemToDelete && (
+        <ConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={confirmDelete}
+          itemName={itemToDelete.name}
+          itemType={itemToDelete.type}
+        />
+      )}
     </div>
   );
 };
