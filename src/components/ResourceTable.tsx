@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpDown, Pencil, Trash } from 'lucide-react';
+import { ArrowUpDown, Pencil, Trash, Eye } from 'lucide-react';
 
 interface Column {
   key: string;
@@ -20,6 +20,7 @@ interface ResourceTableProps {
   searchTerm?: string;
   onEdit?: (item: any) => void;
   onDelete?: (item: any) => void;
+  onView?: (item: any) => void;
   showActions?: boolean;
 }
 
@@ -29,6 +30,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
   searchTerm = '',
   onEdit,
   onDelete,
+  onView,
   showActions = true
 }) => {
   const filteredData = data.filter(item =>
@@ -51,12 +53,17 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
     if (onDelete) onDelete(item);
   };
 
+  const handleView = (e: React.MouseEvent, item: any) => {
+    e.stopPropagation();
+    if (onView) onView(item);
+  };
+
   return (
     <div className="bg-[#1a1a1a] rounded-lg border border-gray-800">
       <div 
         className='grid gap-4 p-4 border-b border-gray-800 text-sm text-gray-400'
         style={{ 
-            gridTemplateColumns: `repeat(${totalCols}, minmax(0, 1fr)) ${showActions ? '80px' : ''}`
+            gridTemplateColumns: `repeat(${totalCols}, minmax(0, 1fr)) ${showActions ? '100px' : ''}`
         }}
       >
         {config.columns.map((column) => (
@@ -76,7 +83,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
             key={item.id || item.code}
             className={`grid gap-4 p-4 text-sm hover:bg-[#2a2a2a] cursor-pointer transition-colors`}
             style={{ 
-                gridTemplateColumns: `repeat(${totalCols}, minmax(0, 1fr)) ${showActions ? '80px' : ''}`
+                gridTemplateColumns: `repeat(${totalCols}, minmax(0, 1fr)) ${showActions ? '100px' : ''}`
             }}
           >
             {config.columns.map((column) => (
@@ -89,10 +96,20 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
             ))}
             {showActions && (
               <div className="flex justify-center items-center gap-2">
+                {onView && (
+                  <button 
+                    onClick={(e) => handleView(e, item)}
+                    className="p-1.5 bg-green-500/20 text-green-400 rounded-md hover:bg-green-500/30 transition-colors"
+                    title="Ver detalles"
+                  >
+                    <Eye size={16} />
+                  </button>
+                )}
                 {onEdit && (
                   <button 
                     onClick={(e) => handleEdit(e, item)}
                     className="p-1.5 bg-blue-500/20 text-blue-400 rounded-md hover:bg-blue-500/30 transition-colors"
+                    title="Editar"
                   >
                     <Pencil size={16} />
                   </button>
@@ -101,6 +118,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
                   <button 
                     onClick={(e) => handleDelete(e, item)}
                     className="p-1.5 bg-red-500/20 text-red-400 rounded-md hover:bg-red-500/30 transition-colors"
+                    title="Eliminar"
                   >
                     <Trash size={16} />
                   </button>

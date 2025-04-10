@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Plus, Copy, Search, ArrowUpDown, AlertCircle } from 'lucide-react';
-import { IPageDatabase, IMaterial, IEquipment, ILabor } from '../types/Database';
+import { IPageDatabase, IMaterial, IEquipment, ILabor, IWorkItem } from '../types/Database';
 import { useDatabaseWithResource, useDeleteItem, useUpdateMaterial, useUpdateEquipment, useUpdateLabor } from '../hooks/useDatabases';
 import { useNotification } from '../context/NotificationContext';
 import SearchBar from './Searcn';
@@ -8,6 +8,7 @@ import ResourceTable from './ResourceTable';
 import DatabaseItemModal from './DatabaseItemModal';
 import BudgetItemModal from './BudgetItemModal';
 import CopyItemModal from './CopyItemModal';
+import RightBudgetContainer from '../views/budgets/components/rightBudgetContainer';
 
 // Componente para confirmar eliminación
 interface ConfirmDialogProps {
@@ -99,6 +100,10 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
   const deleteItemMutation = useDeleteItem();
   const { addNotification } = useNotification();
   
+  // Estado para controlar el detalle de una partida
+  const [selectedWorkItem, setSelectedWorkItem] = useState<IWorkItem | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  
   // Update resourceType when activeTab changes
   React.useEffect(() => {
     setResourceType(activeTab);
@@ -119,6 +124,20 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
   const handleEditItem = (item: any) => {
     setEditItem(item);
     setIsModalOpen(true);
+  };
+
+  // Handle viewing an item details (for work items)
+  const handleViewItem = (item: any) => {
+    if (activeTab === 'WI') {
+      if (selectedWorkItem?.id === item.id) {
+        // Si hacemos clic en el mismo elemento, alternamos la visibilidad
+        setDetailsVisible(!detailsVisible);
+      } else {
+        // Si hacemos clic en un elemento diferente, lo seleccionamos y mostramos los detalles
+        setSelectedWorkItem(item);
+        setDetailsVisible(true);
+      }
+    }
   };
 
   // Handle deleting an item
@@ -147,6 +166,17 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
     setIsDeleteDialogOpen(true);
   };
 
+  // Handle work item update
+  const handleUpdateWorkItem = (key: string, updatedItem: IWorkItem) => {
+    setSelectedWorkItem(updatedItem);
+    refetch();
+  };
+
+  // Close details panel
+  const handleCloseDetails = () => {
+    setDetailsVisible(false);
+  };
+
   // Confirm deletion
   const confirmDelete = async () => {
     if (!itemToDelete) return;
@@ -173,6 +203,13 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
       } else {
         await deleteItemMutation.mutateAsync({ id: itemToDelete.id, type: resourceTypeForDelete });
       }
+      
+      // Si el item que estamos eliminando es el que está seleccionado, cerramos el panel de detalles
+      if (selectedWorkItem && selectedWorkItem.id === itemToDelete.id) {
+        setDetailsVisible(false);
+        setSelectedWorkItem(null);
+      }
+      
       addNotification('success', 'Item eliminado correctamente');
       refetch();
     } catch (error) {
@@ -307,17 +344,41 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         ))}
       </div>
 
-
       <SearchBar onSearch={setSearchTerm}/>
 
-      <div className="bg-[#1a1a1a] rounded-lg border border-gray-800">
-        <ResourceTable 
-          config={tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0]} 
-          data={data?.resources?.results || []} 
-          searchTerm={searchTerm} 
-          onEdit={handleEditItem}
-          onDelete={handleDeleteItem}
-        />
+      <div className="flex">
+        {/* Panel principal - Tabla de recursos */}
+        <div className={`transition-all duration-300 ${detailsVisible && selectedWorkItem && activeTab === 'WI' ? 'w-7/12 mr-6' : 'w-full'}`}>
+          <ResourceTable 
+            config={tabsConfig.find(tab => tab.key === activeTab) || tabsConfig[0]} 
+            data={data?.resources?.results || []} 
+            searchTerm={searchTerm} 
+            onEdit={handleEditItem}
+            onDelete={handleDeleteItem}
+            onView={activeTab === 'WI' ? handleViewItem : undefined}
+          />
+        </div>
+
+        {/* Panel lateral - Detalles de la partida */}
+        {activeTab === 'WI' && selectedWorkItem && (
+          <div 
+            className={`transition-all duration-300 ease-in-out ${
+              detailsVisible 
+                ? 'opacity-100 translate-x-0 w-5/12' 
+                : 'opacity-0 translate-x-20 w-0 overflow-hidden'
+            }`}
+          >
+            {detailsVisible && selectedWorkItem && (
+              <div className="bg-[#1a1a1a] rounded-lg border border-gray-800 h-full">
+                <RightBudgetContainer
+                  selectedItem={selectedWorkItem}
+                  setSelectedItem={setSelectedWorkItem}
+                  handleUpdateItems={handleUpdateWorkItem}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal for creating new items */}
@@ -338,7 +399,12 @@ const DatabaseItemsView: React.FC<DatabaseItemsViewProps> = ({ database, onBack 
         <BudgetItemModal 
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          database={database}
+          detailBudget={{
+            id: database.id,
+            name: database.name,
+            company: { id: "1", name: "Mock Company" },
+            work_item: []
+          }}
           onAdd={handleItemCreated}
         />
       )}

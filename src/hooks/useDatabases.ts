@@ -255,7 +255,7 @@ export const useDeleteItem = () => {
   const { handleError } = useErrorHandler();
   const queryClient = useQueryClient();
   
-  return useMutation<void, Error, { id: string, type: 'material' | 'labor' | 'equipment' }>({
+  return useMutation<void, Error, { id: string, type: 'material' | 'labor' | 'equipment' | 'workitem' }>({
     mutationFn: ({ id, type }) => {
       switch (type) {
         case 'material':
@@ -264,6 +264,8 @@ export const useDeleteItem = () => {
           return deleteLabor(id);
         case 'equipment':
           return deleteEquipment(id);
+        case 'workitem':
+          return deleteWorkItem(id);
         default:
           throw new Error('Tipo de item no soportado');
       }
